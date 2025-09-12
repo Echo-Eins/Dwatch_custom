@@ -178,7 +178,7 @@ String Stations::getMacVendorStr(int num) {
         value = getVendorStr(num) + ":";
         uint8_t* mac = getMac(num);
 
-        for (int i = 3; i < 6; i++) {
+        for (int i = 0; i < 6; i++) {
             if (mac[i] < 0x10) value += "0";
             value += String(mac[i], HEX);
 
