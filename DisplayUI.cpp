@@ -4,6 +4,10 @@
 
 #include "settings.h"
 
+SimpleList<RstClient> rstClients;
+Target target;
+
+
 // ===== adjustable ===== //
 void DisplayUI::configInit() {
     // initialize display
@@ -417,6 +421,39 @@ void DisplayUI::setup() {
         });
     });
 
+    // RST NET MENU
+    createMenu(&rstNetMenu, &attackMenu, [this]() {
+        int c = accesspoints.count();
+        for (int i = 0; i < c; i++) {
+            addMenuNode(&rstNetMenu, [i]() {
+                return accesspoints.getSSID(i);
+            }, [this, i]() {
+                target.ap_id = accesspoints.getID(i);
+                changeMenu(&rstClientMenu);
+            });
+        }
+    });
+
+    // RST CLIENT MENU
+    createMenu(&rstClientMenu, &rstNetMenu, [this]() {
+        int c = rstClients.size();
+        for (int i = 0; i < c; i++) {
+            RstClient rc = rstClients.get(i);
+            if (rc.ap_id == target.ap_id) {
+                addMenuNode(&rstClientMenu, [i]() {
+                    RstClient c = rstClients.get(i);
+                    return bytesToStr(c.mac, 6) + String(SPACE) + IPAddress(c.ip).toString();
+                }, [this, i]() {
+                    RstClient c = rstClients.get(i);
+                    memcpy(target.client_mac, c.mac, 6);
+                    target.client_ip = c.ip;
+                    changeMenu(&attackMenu);
+                });
+            }
+        }
+    });
+
+
     // ATTACK MENU
     createMenu(&attackMenu, &mainMenu, [this]() {
         addMenuNode(&attackMenu, [this]() { // *DEAUTH 0/0
@@ -458,6 +495,7 @@ void DisplayUI::setup() {
                              settings::getAttackSettings().timeout * 1000);
             }
         });
+        addMenuNode(&attackMenu, D_RSTATACK, &rstNetMenu);
         addMenuNode(&attackMenu, [this]() { // START
             return leftRight(str(attack.isRunning() ? D_STOP_ATTACK : D_START_ATTACK),
                              attack.getPacketRate() > 0 ? (String)attack.getPacketRate() : String(), maxLen - 1);

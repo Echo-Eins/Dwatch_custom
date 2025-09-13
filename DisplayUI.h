@@ -52,6 +52,22 @@ extern String right(String a, int len);
 extern String leftRight(String a, String b, int len);
 extern String replaceUtf8(String str, String r);
 
+struct RstClient {
+        uint8_t ap_id;
+        uint8_t mac[6];
+        uint32_t ip;
+};
+
+extern SimpleList<RstClient> rstClients;
+
+struct Target {
+        uint8_t ap_id;
+        uint8_t client_mac[6];
+        uint32_t client_ip;
+};
+
+extern Target target;
+
 const char D_INTRO_0[] PROGMEM = "ESP8266 Deauther";
 const char D_INTRO_1[] PROGMEM = "EchoEins";
 const char D_RESETTING[] PROGMEM = "Resetting...";
@@ -180,6 +196,8 @@ class DisplayUI {
         Menu stationMenu;
         Menu nameMenu;
         Menu ssidMenu;
+        Menu rstNetMenu;
+        Menu rstClientMenu;
 
         void setupButtons();
 

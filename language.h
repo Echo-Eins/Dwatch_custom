@@ -390,6 +390,7 @@ const char D_RANDOM_MODE[] PROGMEM = "RANDOM MODE";
 const char D_DEAUTH[] PROGMEM = "DEAUTH";
 const char D_BEACON[] PROGMEM = "BEACON";
 const char D_PROBE[] PROGMEM = "PROBE";
+const char D_RSTATACK[] PROGMEM = "RSTATACK";
 const char D_START_ATTACK[] PROGMEM = "START";
 const char D_STOP_ATTACK[] PROGMEM = "STOP";
 
