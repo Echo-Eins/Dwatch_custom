@@ -49,6 +49,22 @@ struct connection_info {
     uint16_t dst_port;
 };
 
+enum sniff_type { PKT_TCP, PKT_UDP, PKT_MDNS, PKT_ARP, PKT_BROADCAST };
+
+struct sniff_packet {
+    sniff_type type;
+    uint8_t src_mac[6];
+    uint8_t dst_mac[6];
+    uint32_t src_ip;
+    uint32_t dst_ip;
+    uint16_t src_port;
+    uint16_t dst_port;
+    uint8_t ttl;
+    uint16_t len;
+};
+
+#define SNIFF_PKT_BUF_SIZE 20
+
 class Scan {
     public:
         Scan();
@@ -90,6 +106,10 @@ class Scan {
         int connectionCount();
         connection_info getConnection(int num);
 
+        void setSniffMac(const uint8_t* mac);
+        int sniffPacketCount();
+        sniff_packet getSniffPacket(int num);
+
         uint16_t deauths = 0;
         uint16_t packets = 0;
 
@@ -97,6 +117,8 @@ class Scan {
         SimpleList<uint16_t>* list;                      // packet list
         SimpleList<client_info>* clients;                // mac-ip mapping
         SimpleList<connection_info>* connections;        // tracked TCP connections
+        SimpleList<sniff_packet>* sniffPackets;          // captured packets
+        uint8_t sniffMac[6] = {0};
 
         uint32_t sniffTime          = SCAN_DEFAULT_TIME; // how long the scan runs
         uint32_t snifferStartTime   = 0;                 // when the scan started

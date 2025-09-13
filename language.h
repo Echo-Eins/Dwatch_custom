@@ -351,6 +351,7 @@ const char D_DESELECT_ALL[] PROGMEM = "DESELECT ALL";
 const char D_CLONE[] PROGMEM = "CLONE SSID";
 const char D_LED[] PROGMEM = "LED";
 const char D_STROBO[] PROGMEM = "STROBOSCOPE";
+const char D_SNIFF[] PROGMEM = "SNIFF";
 
 // BUTTON TEST
 const char D_UP[] PROGMEM = "UP:";
@@ -365,6 +366,7 @@ const char D_SCAN[] PROGMEM = "SCAN";
 const char D_SHOW[] PROGMEM = "SELECT";
 const char D_ATTACK[] PROGMEM = "ATTACK";
 const char D_PACKET_MONITOR[] PROGMEM = "PACKET MONITOR";
+const char D_CLIENT_SNIFF[] PROGMEM = "CLIENT SNIFF";
 const char D_CLOCK[] PROGMEM = "CLOCK";
 const char D_CLOCK_DISPLAY[] PROGMEM = "CLOCK DISPLAY";
 const char D_CLOCK_SET[] PROGMEM = "SET CLOCK";

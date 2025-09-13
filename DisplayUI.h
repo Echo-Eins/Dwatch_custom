@@ -94,6 +94,7 @@ enum class DISPLAY_MODE { OFF,
                           MENU,
                           LOADSCAN,
                           PACKETMONITOR,
+                          CLIENT_SNIFF,
                           INTRO,
                           CLOCK,
                           CLOCK_DISPLAY,
@@ -106,6 +107,8 @@ class DisplayUI {
         DISPLAY_MODE mode = DISPLAY_MODE::MENU;
         bool highlightLED = false;
         bool strobeLED    = false;
+
+        uint8_t sniffClientMac[6] = {0};
 
         Button* up   = NULL;
         Button* down = NULL;
@@ -126,7 +129,7 @@ class DisplayUI {
         const uint8_t  maxLen          = 18;
         const uint8_t  lineHeight      = 12;
         const uint8_t  buttonDelay     = 250;
-        const uint8_t  drawInterval    = 100; // 100ms = 10 FPS
+        uint16_t       drawInterval    = 100; // 100ms = 10 FPS
         const uint16_t scrollSpeed     = 500; // time interval in ms
         const uint16_t screenIntroTime = 2500;
         uint16_t       screenWidth     = 128;
@@ -209,6 +212,7 @@ class DisplayUI {
         void drawMenu();
         void drawLoadingScan();
         void drawPacketMonitor();
+        void drawClientSniff();
         void drawIntro();
         void drawResetting();
         void drawTimer();

@@ -360,6 +360,14 @@ void DisplayUI::setup() {
             return str(D_SEEN) + stations.getTimeStr(selectedID);
         }, NULL);                                                                      // Seen: <1min
 
+        addMenuNode(&stationMenu, D_SNIFF, [this]() { // SNIFF
+            memcpy(sniffClientMac, stations.getMac(selectedID), 6);
+            scan.setSniffMac(sniffClientMac);
+            scan.start(SCAN_MODE_SNIFFER, 0, SCAN_MODE_OFF, 0, false, wifi_channel);
+            drawInterval = 500;
+            mode = DISPLAY_MODE::CLIENT_SNIFF;
+        });
+
         addMenuNode(&stationMenu, [this]() {
             return stations.getSelected(selectedID) ? str(D_DESELECT) : str(D_SELECT); // SELECT/DESELECT
         }, [this]() {
@@ -674,7 +682,7 @@ void DisplayUI::setupButtons() {
             if (mode == DISPLAY_MODE::MENU) {                 // when in menu, go up or down with cursor
                 if (currentMenu->selected > 0) currentMenu->selected--;
                 else currentMenu->selected = currentMenu->list->size() - 1;
-            } else if (mode == DISPLAY_MODE::PACKETMONITOR) { // when in packet monitor, change channel
+            } else if (mode == DISPLAY_MODE::PACKETMONITOR || mode == DISPLAY_MODE::CLIENT_SNIFF) { // when in packet monitor, change channel
                 scan.setChannel(wifi_channel + 1);
             } else if (mode == DISPLAY_MODE::CLOCK) {         // when in clock, change time
                 setTime(clockHour, clockMinute + 1, clockSecond);
@@ -698,7 +706,7 @@ void DisplayUI::setupButtons() {
             if (mode == DISPLAY_MODE::MENU) {                 // when in menu, go up or down with cursor
                 if (currentMenu->selected > 0) currentMenu->selected--;
                 else currentMenu->selected = currentMenu->list->size() - 1;
-            } else if (mode == DISPLAY_MODE::PACKETMONITOR) { // when in packet monitor, change channel
+            } else if (mode == DISPLAY_MODE::PACKETMONITOR || mode == DISPLAY_MODE::CLIENT_SNIFF) { // when in packet monitor, change channel
                 scan.setChannel(wifi_channel + 1);
             } else if (mode == DISPLAY_MODE::CLOCK) {         // when in clock, change time
                 setTime(clockHour, clockMinute + 10, clockSecond);
@@ -723,7 +731,7 @@ void DisplayUI::setupButtons() {
             if (mode == DISPLAY_MODE::MENU) {                 // when in menu, go up or down with cursor
                 if (currentMenu->selected < currentMenu->list->size() - 1) currentMenu->selected++;
                 else currentMenu->selected = 0;
-            } else if (mode == DISPLAY_MODE::PACKETMONITOR) { // when in packet monitor, change channel
+            } else if (mode == DISPLAY_MODE::PACKETMONITOR || mode == DISPLAY_MODE::CLIENT_SNIFF) { // when in packet monitor, change channel
                 scan.setChannel(wifi_channel - 1);
             } else if (mode == DISPLAY_MODE::CLOCK) {         // when in clock, change time
                 setTime(clockHour, clockMinute - 1, clockSecond);
@@ -749,7 +757,7 @@ void DisplayUI::setupButtons() {
             if (mode == DISPLAY_MODE::MENU) {                 // when in menu, go up or down with cursor
                 if (currentMenu->selected < currentMenu->list->size() - 1) currentMenu->selected++;
                 else currentMenu->selected = 0;
-            } else if (mode == DISPLAY_MODE::PACKETMONITOR) { // when in packet monitor, change channel
+            } else if (mode == DISPLAY_MODE::PACKETMONITOR || mode == DISPLAY_MODE::CLIENT_SNIFF) { // when in packet monitor, change channel
                 scan.setChannel(wifi_channel - 1);
             } else if (mode == DISPLAY_MODE::CLOCK) {         // when in clock, change time
                 setTime(clockHour, clockMinute - 10, clockSecond);
@@ -782,8 +790,10 @@ void DisplayUI::setupButtons() {
                     break;
 
                 case DISPLAY_MODE::PACKETMONITOR:
+                case DISPLAY_MODE::CLIENT_SNIFF:
                 case DISPLAY_MODE::LOADSCAN:
                     scan.stop();
+                    drawInterval = 100;
                     mode = DISPLAY_MODE::MENU;
                     break;
 
@@ -829,8 +839,10 @@ void DisplayUI::setupButtons() {
                     break;
 
                 case DISPLAY_MODE::PACKETMONITOR:
+                case DISPLAY_MODE::CLIENT_SNIFF:
                 case DISPLAY_MODE::LOADSCAN:
                     scan.stop();
+                    drawInterval = 100;
                     mode = DISPLAY_MODE::MENU;
                     break;
 
@@ -911,6 +923,10 @@ void DisplayUI::draw(bool force) {
 
             case DISPLAY_MODE::PACKETMONITOR:
                 drawPacketMonitor();
+                break;
+
+            case DISPLAY_MODE::CLIENT_SNIFF:
+                drawClientSniff();
                 break;
 
             case DISPLAY_MODE::INTRO:
@@ -1028,6 +1044,50 @@ void DisplayUI::drawPacketMonitor() {
             x++;
         }
         // Serial.println("---------");
+    }
+}
+
+static String ipToStr(uint32_t ip) {
+    return String((ip >> 24) & 0xFF) + String('.') +
+           String((ip >> 16) & 0xFF) + String('.') +
+           String((ip >> 8) & 0xFF) + String('.') +
+           String(ip & 0xFF);
+}
+
+void DisplayUI::drawClientSniff() {
+    String headline = leftRight(str(D_CH) + getChannel(), str(D_CLIENT_SNIFF), maxLen);
+    drawString(0, 0, headline);
+
+    int lines = (screenHeight / lineHeight) - 1;
+    int count = scan.sniffPacketCount();
+    int start = count > lines ? count - lines : 0;
+
+    for (int i = 0; i < lines && (start + i) < count; i++) {
+        sniff_packet p = scan.getSniffPacket(start + i);
+        String line;
+        switch (p.type) {
+            case PKT_TCP: line = "TCP "; break;
+            case PKT_UDP: line = "UDP "; break;
+            case PKT_MDNS: line = "MDNS "; break;
+            case PKT_ARP: line = "ARP "; break;
+            default: line = "BC "; break;
+        }
+        line += ipToStr(p.src_ip);
+        if (p.src_port) {
+            line += ':';
+            line += String(p.src_port);
+        }
+        line += '>';
+        line += ipToStr(p.dst_ip);
+        if (p.dst_port) {
+            line += ':';
+            line += String(p.dst_port);
+        }
+        line += " T";
+        line += String(p.ttl);
+        line += " L";
+        line += String(p.len);
+        drawString(i + 1, line.substring(0, maxLen));
     }
 }
 
