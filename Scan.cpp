@@ -5,6 +5,13 @@
 #include "settings.h"
 #include "wifi.h"
 
+bool isZeroMac(const uint8_t* mac) {
+    for (uint8_t i = 0; i < 6; i++)
+        if (mac[i] != 0x00) return false;
+
+    return true;
+}
+
 Scan::Scan() {
     list    = new SimpleList<uint16_t>;
     clients = new SimpleList<client_info>;
@@ -37,7 +44,8 @@ void Scan::sniffer(uint8_t* buf, uint16_t len) {
     if (!fromBroadcast && macMulticast(macFrom)) return;
 
     // filter for selected client
-    if (memcmp(sniffMac, macTo, 6) != 0 && memcmp(sniffMac, macFrom, 6) != 0) return;
+    bool hasFilter = !isZeroMac(sniffMac);
+    if (hasFilter && memcmp(sniffMac, macTo, 6) != 0 && memcmp(sniffMac, macFrom, 6) != 0) return;
 
     sniff_packet sp{};
     memcpy(sp.src_mac, macFrom, 6);
@@ -226,7 +234,11 @@ connection_info Scan::getConnection(int num) {
 }
 
 void Scan::setSniffMac(const uint8_t* mac) {
-    if (mac) memcpy(sniffMac, mac, 6);
+    if (mac) {
+        memcpy(sniffMac, mac, 6);
+    } else {
+        memset(sniffMac, 0, 6);
+    }
     if (sniffPackets) sniffPackets->clear();
 }
 
@@ -286,6 +298,8 @@ void Scan::start(uint8_t mode, uint32_t time, uint8_t nextmode, uint32_t continu
 
     /* Station Scan */
     else if (mode == SCAN_MODE_STATIONS) {
+        // reset sniff filter
+        memset(sniffMac, 0, 6);
         // start station scan
         if (accesspoints.count() < 1) {
             start(SCAN_MODE_ALL);

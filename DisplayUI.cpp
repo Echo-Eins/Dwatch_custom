@@ -809,6 +809,9 @@ void DisplayUI::setupButtons() {
                 case DISPLAY_MODE::CLIENT_SNIFF:
                 case DISPLAY_MODE::LOADSCAN:
                     scan.stop();
+                    if (mode == DISPLAY_MODE::CLIENT_SNIFF) {
+                                            scan.setSniffMac(nullptr);
+                                        }
                     drawInterval = 100;
                     mode = DISPLAY_MODE::MENU;
                     break;
@@ -858,6 +861,9 @@ void DisplayUI::setupButtons() {
                 case DISPLAY_MODE::CLIENT_SNIFF:
                 case DISPLAY_MODE::LOADSCAN:
                     scan.stop();
+                    if (mode == DISPLAY_MODE::CLIENT_SNIFF) {
+                                            scan.setSniffMac(nullptr);
+                                        }
                     drawInterval = 100;
                     mode = DISPLAY_MODE::MENU;
                     break;
