@@ -563,6 +563,19 @@ void DisplayUI::update(bool force) {
         }
     }
 
+    if (mode == DISPLAY_MODE::TIMER) {
+        // Exit timer with a long press on the select button
+        if (a->getState() && a->getPushTime() > 1000) {
+            buttonTime = currentTime;
+            mode       = DISPLAY_MODE::MENU;
+            display.setFont(DejaVu_Sans_Mono_12);
+            display.setTextAlignment(TEXT_ALIGN_LEFT);
+            strobeLED    = false;
+            highlightLED = false;
+            digitalWrite(HIGHLIGHT_LED, highlightLED);
+            return;
+        }
+    }
 
     draw(force);
 
@@ -751,7 +764,7 @@ void DisplayUI::setupButtons() {
     });
 
     a->setOnHolding([this]() {
-        if (mode == DISPLAY_MODE::CALCULATOR) return;
+        if (mode == DISPLAY_MODE::CALCULATOR || mode == DISPLAY_MODE::TIMER) return;
         scrollCounter   = 0;
         scrollCompleted = false;
         scrollTime      = currentTime;
