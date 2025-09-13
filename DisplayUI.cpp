@@ -511,6 +511,15 @@ void DisplayUI::update(bool force) {
         const uint8_t rows = 4;
         const uint8_t cols = 4;
 
+        // Exit calculator with a long press on the select button
+        if (a->holding(1000)) {
+            buttonTime = currentTime;
+            mode       = DISPLAY_MODE::MENU;
+            calcRow    = 0;
+            calcCol    = 0;
+            return;
+        }
+
         if (up->clicked() || up->holding(buttonDelay)) {
             buttonTime = currentTime;
             if (calcRow > 0) {
@@ -545,17 +554,12 @@ void DisplayUI::update(bool force) {
                 calculator.setOperation(c);
             }
         }
-        if (a->holding(1200)) {
-            mode    = DISPLAY_MODE::MENU;
-            calcRow = 0;
-            calcCol = 0;
-        }
 
         if (b->clicked()) {
             buttonTime = currentTime;
-            mode    = DISPLAY_MODE::MENU;
-            calcRow = 0;
-            calcCol = 0;
+            mode       = DISPLAY_MODE::MENU;
+            calcRow    = 0;
+            calcCol    = 0;
         }
     }
 
@@ -1034,7 +1038,6 @@ void DisplayUI::drawCalculator() {
             char input = getCalcChar(r, c);
             char disp  = input;
             if (disp == '*') disp = 'x';
-            else if (disp == 'C') disp = '?';
             else if (disp == 'B') disp = '<';
             String s = String((calcRow == r && calcCol == c) ? CURSOR : SPACE);
             s += disp;
@@ -1044,7 +1047,7 @@ void DisplayUI::drawCalculator() {
 }
 
 char DisplayUI::getCalcChar(uint8_t row, uint8_t col) {
-    static const char ops[]    = { '+', '-', '*', 'С' };
+    static const char ops[]    = { '+', '-', '*', 'C' };
     static const char bottom[] = { '0', '=', '/', 'B' };
     if (col == 3) return ops[row];
     if (row == 3) return bottom[col];
