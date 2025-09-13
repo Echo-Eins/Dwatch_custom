@@ -8,6 +8,8 @@
 void DisplayUI::configInit() {
     // initialize display
     display.init();
+    screenWidth  = display.getWidth();
+    screenHeight = display.getHeight();
 
     /*
        In case of a compiler (conversion char/uint8_t) error,
@@ -541,9 +543,10 @@ void DisplayUI::setupButtons() {
 
     // === BUTTON UP === //
     up->setOnClicked([this]() {
-        scrollCounter = 0;
-        scrollTime    = currentTime;
-        buttonTime    = currentTime;
+        scrollCounter   = 0;
+        scrollCompleted = false;
+        scrollTime      = currentTime;
+        buttonTime      = currentTime;
 
         if (!tempOff) {
             if (mode == DISPLAY_MODE::MENU) {                 // when in menu, go up or down with cursor
@@ -558,9 +561,10 @@ void DisplayUI::setupButtons() {
     });
 
     up->setOnHolding([this]() {
-        scrollCounter = 0;
-        scrollTime    = currentTime;
-        buttonTime    = currentTime;
+        scrollCounter   = 0;
+        scrollCompleted = false;
+        scrollTime      = currentTime;
+        buttonTime      = currentTime;
         if (!tempOff) {
             if (mode == DISPLAY_MODE::MENU) {                 // when in menu, go up or down with cursor
                 if (currentMenu->selected > 0) currentMenu->selected--;
@@ -575,9 +579,10 @@ void DisplayUI::setupButtons() {
 
     // === BUTTON DOWN === //
     down->setOnClicked([this]() {
-        scrollCounter = 0;
-        scrollTime    = currentTime;
-        buttonTime    = currentTime;
+        scrollCounter   = 0;
+        scrollCompleted = false;
+        scrollTime      = currentTime;
+        buttonTime      = currentTime;
         if (!tempOff) {
             if (mode == DISPLAY_MODE::MENU) {                 // when in menu, go up or down with cursor
                 if (currentMenu->selected < currentMenu->list->size() - 1) currentMenu->selected++;
@@ -591,9 +596,10 @@ void DisplayUI::setupButtons() {
     });
 
     down->setOnHolding([this]() {
-        scrollCounter = 0;
-        scrollTime    = currentTime;
-        buttonTime    = currentTime;
+        scrollCounter   = 0;
+        scrollCompleted = false;
+        scrollTime      = currentTime;
+        buttonTime      = currentTime;
         if (!tempOff) {
             if (mode == DISPLAY_MODE::MENU) {                 // when in menu, go up or down with cursor
                 if (currentMenu->selected < currentMenu->list->size() - 1) currentMenu->selected++;
@@ -610,9 +616,10 @@ void DisplayUI::setupButtons() {
 
     // === BUTTON A === //
     a->setOnClicked([this]() {
-        scrollCounter = 0;
-        scrollTime    = currentTime;
-        buttonTime    = currentTime;
+        scrollCounter   = 0;
+        scrollCompleted = false;
+        scrollTime      = currentTime;
+        buttonTime      = currentTime;
         if (!tempOff) {
             switch (mode) {
                 case DISPLAY_MODE::MENU:
@@ -639,9 +646,10 @@ void DisplayUI::setupButtons() {
     });
 
     a->setOnHolding([this]() {
-        scrollCounter = 0;
-        scrollTime    = currentTime;
-        buttonTime    = currentTime;
+        scrollCounter   = 0;
+        scrollCompleted = false;
+        scrollTime      = currentTime;
+        buttonTime      = currentTime;
         if (!tempOff) {
             if (mode == DISPLAY_MODE::MENU) {
                 if (currentMenu->list->get(currentMenu->selected).hold) {
@@ -653,9 +661,10 @@ void DisplayUI::setupButtons() {
 
     // === BUTTON B === //
     b->setOnClicked([this]() {
-        scrollCounter = 0;
-        scrollTime    = currentTime;
-        buttonTime    = currentTime;
+        scrollCounter   = 0;
+        scrollCompleted = false;
+        scrollTime      = currentTime;
+        buttonTime      = currentTime;
         if (!tempOff) {
             switch (mode) {
                 case DISPLAY_MODE::MENU:
@@ -763,15 +772,25 @@ void DisplayUI::drawMenu() {
 
         // horizontal scrolling
         if ((currentMenu->selected == i) && (tmpLen >= maxLen)) {
-            tmp = tmp + tmp;
-            tmp = tmp.substring(scrollCounter, scrollCounter + maxLen - 1);
+            int maxScroll = tmpLen - (maxLen - 1);
 
-            if (((scrollCounter > 0) && (scrollTime < currentTime - scrollSpeed)) || ((scrollCounter == 0) && (scrollTime < currentTime - scrollSpeed * 4))) {
-                scrollTime = currentTime;
-                scrollCounter++;
+            if (!scrollCompleted) {
+                tmp = tmp.substring(scrollCounter, scrollCounter + maxLen - 1);
+
+                if (((scrollCounter > 0) && (scrollTime < currentTime - scrollSpeed)) ||
+                    ((scrollCounter == 0) && (scrollTime < currentTime - scrollSpeed * 4))) {
+                    scrollTime = currentTime;
+
+                    if (scrollCounter < maxScroll) {
+                        scrollCounter++;
+                    } else {
+                        scrollCounter   = 0;
+                        scrollCompleted = true;
+                    }
+                    }
+            } else {
+                tmp = tmp.substring(0, maxLen - 1);
             }
-
-            if (scrollCounter > tmpLen) scrollCounter = 0;
         }
 
         tmp = (currentMenu->selected == i ? CURSOR : SPACE) + tmp;
@@ -796,7 +815,7 @@ void DisplayUI::drawLoadingScan() {
 }
 
 void DisplayUI::drawPacketMonitor() {
-    double scale = scan.getScaleFactor(sreenHeight - lineHeight - 2);
+    double scale = scan.getScaleFactor(screenHeight - lineHeight - 2);
 
     String headline = leftRight(str(D_CH) + getChannel() + String(' ') + String('[') + String(scan.deauths) + String(']'), String(scan.getPacketRate()) + str(D_PKTS), maxLen);
 
@@ -808,15 +827,15 @@ void DisplayUI::drawPacketMonitor() {
         int y = 0;
 
         while (i < SCAN_PACKET_LIST_SIZE && x < screenWidth) {
-            y = (sreenHeight-1) - (scan.getPackets(i) * scale);
+            y = (screenHeight-1) - (scan.getPackets(i) * scale);
             i++;
 
-            // Serial.printf("%d,%d -> %d,%d\n", x, (sreenHeight-1), x, y);
-            drawLine(x, (sreenHeight-1), x, y);
+            // Serial.printf("%d,%d -> %d,%d\n", x, (screenHeight-1), x, y);
+            drawLine(x, (screenHeight-1), x, y);
             x++;
 
-            // Serial.printf("%d,%d -> %d,%d\n", x, (sreenHeight-1), x, y);
-            drawLine(x, (sreenHeight-1), x, y);
+            // Serial.printf("%d,%d -> %d,%d\n", x, (screenHeight-1), x, y);
+            drawLine(x, (screenHeight-1), x, y);
             x++;
         }
         // Serial.println("---------");
@@ -826,8 +845,7 @@ void DisplayUI::drawPacketMonitor() {
 void DisplayUI::drawIntro() {
     drawString(0, center(str(D_INTRO_0), maxLen));
     drawString(1, center(str(D_INTRO_1), maxLen));
-    drawString(2, center(str(D_INTRO_2), maxLen));
-    drawString(3, center(DEAUTHER_VERSION, maxLen));
+    drawString(2, center(DEAUTHER_VERSION, maxLen));
     if (scan.isScanning()) {
         if (currentTime - startTime >= screenIntroTime+4500) drawString(4, left(str(D_SCANNING_3), maxLen));
         else if (currentTime - startTime >= screenIntroTime+3000) drawString(4, left(str(D_SCANNING_2), maxLen));
@@ -869,6 +887,9 @@ void DisplayUI::changeMenu(Menu* menu) {
         currentMenu           = menu;
         currentMenu->selected = 0;
         buttonTime            = currentTime;
+        scrollCounter         = 0;
+        scrollCompleted       = false;
+        scrollTime            = currentTime;
 
         if (selectedID < 0) selectedID = 0;
 

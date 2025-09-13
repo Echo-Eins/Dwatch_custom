@@ -49,8 +49,7 @@ extern String leftRight(String a, String b, int len);
 extern String replaceUtf8(String str, String r);
 
 const char D_INTRO_0[] PROGMEM = "ESP8266 Deauther";
-const char D_INTRO_1[] PROGMEM = "by Echo_Eins";
-const char D_INTRO_2[] PROGMEM = DISPLAY_TEXT;
+const char D_INTRO_1[] PROGMEM = "Hardware by EchoEins";
 const char D_RESETTING[] PROGMEM = "Resetting...";
 const char D_SCANNING_0[] PROGMEM = "> Scanning";
 const char D_SCANNING_1[] PROGMEM = "> Scanning.";
@@ -102,14 +101,14 @@ class DisplayUI {
         SH1106Spi display = SH1106Spi(SPI_RES, SPI_DC, SPI_CS);
 #endif /* if defined(SSD1306_I2C) */
 
-        const uint8_t maxLen           = 18;
-        const uint8_t lineHeight       = 12;
-        const uint8_t buttonDelay      = 250;
-        const uint8_t drawInterval     = 100; // 100ms = 10 FPS
+        const uint8_t  maxLen          = 18;
+        const uint8_t  lineHeight      = 12;
+        const uint8_t  buttonDelay     = 250;
+        const uint8_t  drawInterval    = 100; // 100ms = 10 FPS
         const uint16_t scrollSpeed     = 500; // time interval in ms
         const uint16_t screenIntroTime = 2500;
-        const uint16_t screenWidth     = 128;
-        const uint16_t sreenHeight     = 64;
+        uint16_t       screenWidth     = 128;
+        uint16_t       screenHeight    = 64;
 
         void configInit();
         void configOn();
@@ -134,8 +133,9 @@ class DisplayUI {
         void off();
 
     private:
-        int16_t selectedID    = 0; // i.e. access point ID to draw the apMenu
-        uint8_t scrollCounter = 0; // for horizontal scrolling
+        int16_t selectedID     = 0; // i.e. access point ID to draw the apMenu
+        uint8_t scrollCounter  = 0; // for horizontal scrolling
+        bool    scrollCompleted = false; // has the text scrolled once
 
         uint32_t scrollTime = 0;   // last time a character was moved
         uint32_t drawTime   = 0;   // last time a frame was drawn
