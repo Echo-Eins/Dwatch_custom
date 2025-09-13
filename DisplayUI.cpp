@@ -1044,7 +1044,7 @@ void DisplayUI::drawCalculator() {
 }
 
 char DisplayUI::getCalcChar(uint8_t row, uint8_t col) {
-    static const char ops[]    = { '+', '-', '*', 'c' };
+    static const char ops[]    = { '+', '-', '*', 'С' };
     static const char bottom[] = { '0', '=', '/', 'B' };
     if (col == 3) return ops[row];
     if (row == 3) return bottom[col];
