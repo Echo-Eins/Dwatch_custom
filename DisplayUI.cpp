@@ -3,10 +3,34 @@
 #include "DisplayUI.h"
 
 #include "settings.h"
+#include <string.h>
 
 SimpleList<RstClient> rstClients;
 Target target;
 
+void rebuildRstClients() {
+    rstClients.clear();
+    int sc = stations.count();
+    for (int i = 0; i < sc; i++) {
+        uint8_t* mac = stations.getMac(i);
+        uint32_t ip = scan.getClientIP(mac);
+        uint8_t* ap_mac = stations.getAPMac(i);
+        int ap_index    = -1;
+        int apc         = accesspoints.count();
+        for (int j = 0; j < apc; j++) {
+            if (memcmp(accesspoints.getMac(j), ap_mac, 6) == 0) {
+                ap_index = j;
+                break;
+            }
+        }
+        if (ap_index < 0) continue;
+        RstClient rc;
+        rc.ap_id = accesspoints.getID(ap_index);
+        memcpy(rc.mac, mac, 6);
+        rc.ip = ip;
+        rstClients.add(rc);
+    }
+}
 
 // ===== adjustable ===== //
 void DisplayUI::configInit() {
@@ -432,6 +456,7 @@ void DisplayUI::setup() {
 
     // RST NET MENU
     createMenu(&rstNetMenu, &attackMenu, [this]() {
+        rebuildRstClients();
         int c = accesspoints.count();
         for (int i = 0; i < c; i++) {
             addMenuNode(&rstNetMenu, [i]() {
@@ -445,6 +470,7 @@ void DisplayUI::setup() {
 
     // RST CLIENT MENU
     createMenu(&rstClientMenu, &rstNetMenu, [this]() {
+        rebuildRstClients();
         int c = rstClients.size();
         for (int i = 0; i < c; i++) {
             RstClient rc = rstClients.get(i);
