@@ -32,6 +32,11 @@ extern bool writeFile(String path, String& buf);
 extern void readFileToSerial(const String path);
 extern String escape(String str);
 
+struct client_info {
+    uint8_t mac[6];
+    uint32_t ip;
+};
+
 class Scan {
     public:
         Scan();
@@ -66,11 +71,16 @@ class Scan {
         uint32_t getMaxPacket();
         uint32_t getPacketRate();
 
+        uint32_t getClientIP(uint8_t* mac);
+        int clientCount();
+        client_info getClient(int num);
+
         uint16_t deauths = 0;
         uint16_t packets = 0;
 
     private:
         SimpleList<uint16_t>* list;                      // packet list
+        SimpleList<client_info>* clients;                // mac-ip mapping
 
         uint32_t sniffTime          = SCAN_DEFAULT_TIME; // how long the scan runs
         uint32_t snifferStartTime   = 0;                 // when the scan started
@@ -89,6 +99,7 @@ class Scan {
 
         bool apWithChannel(uint8_t ch);
         int findAccesspoint(uint8_t* mac);
+        void updateClient(uint8_t* mac, uint32_t ip);
 
         String FILE_PATH = "/scan.json";
 };

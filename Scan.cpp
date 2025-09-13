@@ -6,7 +6,8 @@
 #include "wifi.h"
 
 Scan::Scan() {
-    list = new SimpleList<uint16_t>;
+    list    = new SimpleList<uint16_t>;
+    clients = new SimpleList<client_info>;
 }
 
 void Scan::sniffer(uint8_t* buf, uint16_t len) {
@@ -30,8 +31,9 @@ void Scan::sniffer(uint8_t* buf, uint16_t len) {
     uint8_t* macTo   = &buf[16];
     uint8_t* macFrom = &buf[22];
 
-    if (macBroadcast(macTo) || macBroadcast(macFrom) || !macValid(macTo) || !macValid(macFrom) || macMulticast(macTo) ||
-        macMulticast(macFrom)) return;
+    if (macBroadcast(macTo) || macBroadcast(macFrom) || !macValid(macTo) || !macValid(macFrom) ||
+        macMulticast(macTo) || macMulticast(macFrom))
+        return;
 
     int accesspointNum = findAccesspoint(macFrom);
 
@@ -44,6 +46,43 @@ void Scan::sniffer(uint8_t* buf, uint16_t len) {
             stations.add(macFrom, accesspoints.getID(accesspointNum));
         }
     }
+
+    // parse payload for IP addresses
+    uint16_t frameCtrl = buf[0] | (buf[1] << 8);
+    uint8_t type       = (frameCtrl >> 2) & 0x3;
+    uint8_t subtype    = (frameCtrl >> 4) & 0xF;
+    if (type == 2) { // data frame
+        int hdrLen = 24;
+        uint8_t toFrom = (frameCtrl >> 8) & 0x3;
+        if (toFrom == 3) hdrLen = 30; // WDS
+        if (subtype & 0x08) hdrLen += 2; // QoS data
+        if (len <= hdrLen + 8) return;
+        uint8_t* llc = buf + hdrLen;
+        if (llc[0] == 0xAA && llc[1] == 0xAA && llc[2] == 0x03) {
+            uint16_t ethertype = (llc[6] << 8) | llc[7];
+            uint8_t* payload   = llc + 8;
+            if (ethertype == 0x0800) { // IPv4
+                if (len >= hdrLen + 8 + 20) {
+                    uint32_t src = (payload[12] << 24) | (payload[13] << 16) | (payload[14] << 8) | payload[15];
+                    uint32_t dst = (payload[16] << 24) | (payload[17] << 16) | (payload[18] << 8) | payload[19];
+                    updateClient(macFrom, src);
+                    updateClient(macTo, dst);
+                }
+            } else if (ethertype == 0x0806) { // ARP
+                if (len >= hdrLen + 8 + 28) {
+                    uint8_t* arp = payload;
+                    uint8_t* smac = arp + 8;
+                    uint8_t* sip  = arp + 14;
+                    uint8_t* tmac = arp + 18;
+                    uint8_t* tip  = arp + 24;
+                    uint32_t s_ip = (sip[0] << 24) | (sip[1] << 16) | (sip[2] << 8) | sip[3];
+                    uint32_t t_ip = (tip[0] << 24) | (tip[1] << 16) | (tip[2] << 8) | tip[3];
+                    updateClient(smac, s_ip);
+                    updateClient(tmac, t_ip);
+                }
+            }
+        }
+    }
 }
 
 int Scan::findAccesspoint(uint8_t* mac) {
@@ -51,6 +90,45 @@ int Scan::findAccesspoint(uint8_t* mac) {
         if (memcmp(accesspoints.getMac(i), mac, 6) == 0) return i;
     }
     return -1;
+}
+
+void Scan::updateClient(uint8_t* mac, uint32_t ip) {
+    if (!mac || !clients) return;
+    for (int i = 0; i < clients->size(); i++) {
+        client_info ci = clients->get(i);
+        if (memcmp(ci.mac, mac, 6) == 0) {
+            if (ci.ip != ip) {
+                ci.ip = ip;
+                clients->replace(i, ci);
+            }
+            return;
+        }
+    }
+    client_info ci;
+    memcpy(ci.mac, mac, 6);
+    ci.ip = ip;
+    clients->add(ci);
+}
+
+uint32_t Scan::getClientIP(uint8_t* mac) {
+    if (!mac || !clients) return 0;
+    for (int i = 0; i < clients->size(); i++) {
+        client_info ci = clients->get(i);
+        if (memcmp(ci.mac, mac, 6) == 0) return ci.ip;
+    }
+    return 0;
+}
+
+int Scan::clientCount() {
+    return clients ? clients->size() : 0;
+}
+
+client_info Scan::getClient(int num) {
+    if (!clients || num < 0 || num >= clients->size()) {
+        client_info empty = {{0}, 0};
+        return empty;
+    }
+    return clients->get(num);
 }
 
 void Scan::start(uint8_t mode) {
