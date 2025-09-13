@@ -31,6 +31,7 @@ extern "C" {
 #include "CLI.h"
 #include "DisplayUI.h"
 #include "Calculator.h"
+#include "Timer.h"
 #include "A_config.h"
 
 #include "led.h"
@@ -45,6 +46,7 @@ Attack attack;
 CLI    cli;
 DisplayUI displayUI;
 Calculator calculator;
+Timer timer;
 
 simplebutton::Button* resetButton;
 

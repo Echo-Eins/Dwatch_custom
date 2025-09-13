@@ -90,6 +90,14 @@ void DisplayUI::setup() {
             mode = DISPLAY_MODE::PACKETMONITOR;
         });
         addMenuNode(&mainMenu, D_CLOCK, &clockMenu); // CLOCK
+
+        addMenuNode(&mainMenu, D_TIMER, [this]() {  // TIMER
+                    timer.reset();
+                    mode = DISPLAY_MODE::TIMER;
+                    display.setFont(ArialMT_Plain_24);
+                    display.setTextAlignment(TEXT_ALIGN_CENTER);
+                });
+
         addMenuNode(&mainMenu, D_CALCULATOR, [this]() {      // CALCULATOR
                     calculator.clear();
                     mode = DISPLAY_MODE::CALCULATOR;
@@ -688,6 +696,10 @@ void DisplayUI::setupButtons() {
                     display.setFont(DejaVu_Sans_Mono_12);
                     display.setTextAlignment(TEXT_ALIGN_LEFT);
                     break;
+                case DISPLAY_MODE::TIMER:
+                    if (timer.isRunning()) timer.pause(); else timer.start();
+                    break;
+
             }
         }
     });
@@ -729,9 +741,32 @@ void DisplayUI::setupButtons() {
                     display.setFont(DejaVu_Sans_Mono_12);
                     display.setTextAlignment(TEXT_ALIGN_LEFT);
                     break;
+                case DISPLAY_MODE::TIMER:
+                    timer.reset();
+                    strobeLED = false;
+                    highlightLED = false;
+                    digitalWrite(HIGHLIGHT_LED, highlightLED);
+                    break;
             }
         }
     });
+
+    b->setOnHolding([this]() {
+            scrollCounter   = 0;
+            scrollCompleted = false;
+            scrollTime      = currentTime;
+            buttonTime      = currentTime;
+            if (!tempOff) {
+                if (mode == DISPLAY_MODE::TIMER) {
+                    mode = DISPLAY_MODE::MENU;
+                    display.setFont(DejaVu_Sans_Mono_12);
+                    display.setTextAlignment(TEXT_ALIGN_LEFT);
+                    strobeLED = false;
+                    highlightLED = false;
+                    digitalWrite(HIGHLIGHT_LED, highlightLED);
+                }
+            }
+        }, 800);
 }
 
 String DisplayUI::getChannel() {
@@ -786,6 +821,9 @@ void DisplayUI::draw(bool force) {
             case DISPLAY_MODE::CLOCK:
             case DISPLAY_MODE::CLOCK_DISPLAY:
                 drawClock();
+                break;
+            case DISPLAY_MODE::TIMER:
+                drawTimer();
                 break;
             case DISPLAY_MODE::RESETTING:
                 drawResetting();
@@ -916,6 +954,27 @@ void DisplayUI::drawClock() {
 
 void DisplayUI::drawResetting() {
     drawString(2, center(str(D_RESETTING), maxLen));
+}
+
+void DisplayUI::drawTimer() {
+    uint32_t ms = timer.getRemaining();
+    uint32_t sec = ms / 1000;
+    uint8_t m = sec / 60;
+    uint8_t s = sec % 60;
+    String t;
+    if (m < 10) t += '0';
+    t += String(m);
+    t += ':';
+    if (s < 10) t += '0';
+    t += String(s);
+    display.drawString(64, 20, t);
+
+    if (timer.isFinished() && !strobeLED) {
+        strobeLED = true;
+        highlightLED = true;
+        strobeTime = currentTime;
+        digitalWrite(HIGHLIGHT_LED, highlightLED);
+    }
 }
 
 void DisplayUI::drawCalculator() {

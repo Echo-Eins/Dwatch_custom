@@ -8,6 +8,7 @@
 #include "SSIDs.h"
 #include "Scan.h"
 #include "Attack.h"
+#include "Timer.h"
 #include "Calculator.h"
 
 // ===== adjustable ===== //
@@ -41,6 +42,7 @@ extern Stations     stations;
 extern Scan     scan;
 extern Attack   attack;
 extern Calculator calculator;
+extern Timer timer;
 extern uint32_t currentTime;
 
 extern String leftRight(String a, String b, int len);
@@ -79,6 +81,7 @@ enum class DISPLAY_MODE { OFF,
                           INTRO,
                           CLOCK,
                           CLOCK_DISPLAY,
+                          TIMER,
                           RESETTING,
                           CALCULATOR };
 
@@ -190,6 +193,7 @@ class DisplayUI {
         void drawPacketMonitor();
         void drawIntro();
         void drawResetting();
+        void drawTimer();
         void drawCalculator();
         void clearMenu(Menu* menu);
 
