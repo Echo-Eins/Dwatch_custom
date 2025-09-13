@@ -8,6 +8,7 @@
 #include "SSIDs.h"
 #include "Scan.h"
 #include "Attack.h"
+#include "Calculator.h"
 
 // ===== adjustable ===== //
 #if defined(SSD1306_I2C)
@@ -39,6 +40,7 @@ extern Accesspoints accesspoints;
 extern Stations     stations;
 extern Scan     scan;
 extern Attack   attack;
+extern Calculator calculator;
 extern uint32_t currentTime;
 
 extern String leftRight(String a, String b, int len);
@@ -77,7 +79,8 @@ enum class DISPLAY_MODE { OFF,
                           INTRO,
                           CLOCK,
                           CLOCK_DISPLAY,
-                          RESETTING };
+                          RESETTING,
+                          CALCULATOR };
 
 class DisplayUI {
     public:
@@ -151,6 +154,10 @@ class DisplayUI {
         bool deauthSelected = false;
         bool probeSelected  = false;
 
+        // calculator state
+        uint8_t calcColumn = 0; // 0 digits, 1 operations
+        int8_t  calcIndex  = 0;
+
         // menus
         Menu* currentMenu;
 
@@ -183,6 +190,7 @@ class DisplayUI {
         void drawPacketMonitor();
         void drawIntro();
         void drawResetting();
+        void drawCalculator();
         void clearMenu(Menu* menu);
 
         // menu functions

@@ -30,6 +30,7 @@ extern "C" {
 #include "Attack.h"
 #include "CLI.h"
 #include "DisplayUI.h"
+#include "Calculator.h"
 #include "A_config.h"
 
 #include "led.h"
@@ -43,6 +44,7 @@ Scan   scan;
 Attack attack;
 CLI    cli;
 DisplayUI displayUI;
+Calculator calculator;
 
 simplebutton::Button* resetButton;
 

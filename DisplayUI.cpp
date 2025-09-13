@@ -90,6 +90,10 @@ void DisplayUI::setup() {
             mode = DISPLAY_MODE::PACKETMONITOR;
         });
         addMenuNode(&mainMenu, D_CLOCK, &clockMenu); // CLOCK
+        addMenuNode(&mainMenu, D_CALCULATOR, [this]() {      // CALCULATOR
+                    calculator.clear();
+                    mode = DISPLAY_MODE::CALCULATOR;
+                });
 
 #ifdef HIGHLIGHT_LED
         addMenuNode(&mainMenu, D_LED, [this]() {     // LED
@@ -493,6 +497,49 @@ void DisplayUI::update(bool force) {
     a->update();
     b->update();
 
+    if (mode == DISPLAY_MODE::CALCULATOR) {
+        const char ops[] = { '+', '-', '*', '/', '=', 'C' };
+
+        if (up->clicked()) {
+            buttonTime = currentTime;
+            if (calcColumn == 0) {
+                if (calcIndex > 0) calcIndex--;
+                else { calcColumn = 1; calcIndex = 5; }
+            } else {
+                if (calcIndex > 0) calcIndex--;
+                else { calcColumn = 0; calcIndex = 9; }
+            }
+        }
+
+        if (down->clicked()) {
+            buttonTime = currentTime;
+            if (calcColumn == 0) {
+                if (calcIndex < 9) calcIndex++;
+                else { calcColumn = 1; calcIndex = 0; }
+            } else {
+                if (calcIndex < 5) calcIndex++;
+                else { calcColumn = 0; calcIndex = 0; }
+            }
+        }
+
+        if (a->clicked()) {
+            buttonTime = currentTime;
+            if (calcColumn == 0) {
+                calculator.inputDigit(calcIndex);
+            } else {
+                calculator.setOperation(ops[calcIndex]);
+            }
+        }
+
+        if (b->clicked()) {
+            buttonTime = currentTime;
+            mode       = DISPLAY_MODE::MENU;
+            calcColumn = 0;
+            calcIndex  = 0;
+        }
+    }
+
+
     draw(force);
 
 #ifdef HIGHLIGHT_LED
@@ -743,6 +790,9 @@ void DisplayUI::draw(bool force) {
             case DISPLAY_MODE::RESETTING:
                 drawResetting();
                 break;
+            case DISPLAY_MODE::CALCULATOR:
+                drawCalculator();
+                break;
         }
 
         updateSuffix();
@@ -866,6 +916,18 @@ void DisplayUI::drawClock() {
 
 void DisplayUI::drawResetting() {
     drawString(2, center(str(D_RESETTING), maxLen));
+}
+
+void DisplayUI::drawCalculator() {
+    const char ops[] = { '+', '-', '*', '/', '=', 'C' };
+    drawString(0, center(calculator.getDisplay(), maxLen));
+    String line;
+    if (calcColumn == 0) {
+        line = String(CURSOR) + String(calcIndex);
+    } else {
+        line = String(CURSOR) + String(ops[calcIndex]);
+    }
+    drawString(2, line);
 }
 
 void DisplayUI::clearMenu(Menu* menu) {
