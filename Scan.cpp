@@ -39,7 +39,7 @@ void Scan::sniffer(uint8_t* buf, uint16_t len) {
     // filter for selected client
     if (memcmp(sniffMac, macTo, 6) != 0 && memcmp(sniffMac, macFrom, 6) != 0) return;
 
-    sniff_packet sp = {0};
+    sniff_packet sp{};
     memcpy(sp.src_mac, macFrom, 6);
     memcpy(sp.dst_mac, macTo, 6);
     sp.ip_len    = 0;
