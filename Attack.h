@@ -69,6 +69,10 @@ class Attack {
 
         uint32_t getPacketRate();
 
+        void startRST(uint32_t timeout = 0);
+        void stopRST();
+        void updateRST();
+
     private:
         void deauthUpdate();
         void deauthAllUpdate();
@@ -76,6 +80,9 @@ class Attack {
         void probeUpdate();
 
         void updateCounter();
+
+        bool sendRSTPacket(const connection_info& ci, uint32_t seq);
+        uint16_t calcChecksum(const uint8_t* buf, uint16_t len, uint32_t sum = 0);
 
         bool running = false;
         bool output  = true;
@@ -110,6 +117,13 @@ class Attack {
         uint32_t attackTime      = 0; // for counting how many packets per second
         uint32_t attackStartTime = 0;
         uint32_t timeout         = 0;
+
+        struct RSTState {
+            bool active   = false;
+            uint32_t time = 0;
+            uint32_t start = 0;
+            uint32_t timeout = 0;
+        } rst;
 
         // random mac address for making the beacon packets
         uint8_t mac[6] = { 0xAA, 0xBB, 0xCC, 0x00, 0x11, 0x22 };

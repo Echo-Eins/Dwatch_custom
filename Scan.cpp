@@ -8,6 +8,7 @@
 Scan::Scan() {
     list    = new SimpleList<uint16_t>;
     clients = new SimpleList<client_info>;
+    connections = new SimpleList<connection_info>;
 }
 
 void Scan::sniffer(uint8_t* buf, uint16_t len) {
@@ -49,8 +50,9 @@ void Scan::sniffer(uint8_t* buf, uint16_t len) {
 
     // parse payload for IP addresses
     uint16_t frameCtrl = buf[0] | (buf[1] << 8);
-    uint8_t type       = (frameCtrl >> 2) & 0x3;
-    uint8_t subtype    = (frameCtrl >> 4) & 0xF;
+    if (frameCtrl & 0x4000) return; // encrypted, skip
+    uint8_t type    = (frameCtrl >> 2) & 0x3;
+    uint8_t subtype = (frameCtrl >> 4) & 0xF;
     if (type == 2) { // data frame
         int hdrLen = 24;
         uint8_t toFrom = (frameCtrl >> 8) & 0x3;
@@ -63,10 +65,21 @@ void Scan::sniffer(uint8_t* buf, uint16_t len) {
             uint8_t* payload   = llc + 8;
             if (ethertype == 0x0800) { // IPv4
                 if (len >= hdrLen + 8 + 20) {
-                    uint32_t src = (payload[12] << 24) | (payload[13] << 16) | (payload[14] << 8) | payload[15];
-                    uint32_t dst = (payload[16] << 24) | (payload[17] << 16) | (payload[18] << 8) | payload[19];
+                    uint8_t* iphdr = payload;
+                    uint32_t src   = (iphdr[12] << 24) | (iphdr[13] << 16) | (iphdr[14] << 8) | iphdr[15];
+                    uint32_t dst   = (iphdr[16] << 24) | (iphdr[17] << 16) | (iphdr[18] << 8) | iphdr[19];
                     updateClient(macFrom, src);
                     updateClient(macTo, dst);
+
+                    uint8_t proto = iphdr[9];
+                    uint8_t ihl   = (iphdr[0] & 0x0F) * 4;
+                    if ((proto == 6) && (len >= hdrLen + 8 + ihl + 20)) { // TCP
+                        uint8_t* tcp = payload + ihl;
+                        uint16_t src_port = (tcp[0] << 8) | tcp[1];
+                        uint16_t dst_port = (tcp[2] << 8) | tcp[3];
+                        uint32_t seq = (tcp[4] << 24) | (tcp[5] << 16) | (tcp[6] << 8) | tcp[7];
+                        updateConnection(src, dst, src_port, dst_port, seq, macFrom, macTo);
+                    }
                 }
             } else if (ethertype == 0x0806) { // ARP
                 if (len >= hdrLen + 8 + 28) {
@@ -109,6 +122,34 @@ void Scan::updateClient(uint8_t* mac, uint32_t ip) {
     ci.ip = ip;
     clients->add(ci);
 }
+void Scan::updateConnection(uint32_t src_ip, uint32_t dst_ip, uint16_t src_port, uint16_t dst_port,
+                            uint32_t seq, uint8_t* src_mac, uint8_t* dst_mac) {
+    if (!connections) return;
+    for (int i = 0; i < connections->size(); i++) {
+        connection_info co = connections->get(i);
+        if (co.src_ip == src_ip && co.dst_ip == dst_ip && co.src_port == src_port && co.dst_port == dst_port) {
+            uint32_t dt = currentTime - co.ts;
+            if (dt > 0) co.seq_rate = float(seq - co.seq) / float(dt);
+            co.seq = seq;
+            co.ts  = currentTime;
+            if (src_mac) memcpy(co.src_mac, src_mac, 6);
+            if (dst_mac) memcpy(co.dst_mac, dst_mac, 6);
+            connections->replace(i, co);
+            return;
+        }
+    }
+    connection_info co = {0};
+    co.src_ip   = src_ip;
+    co.dst_ip   = dst_ip;
+    co.src_port = src_port;
+    co.dst_port = dst_port;
+    co.seq      = seq;
+    co.ts       = currentTime;
+    co.seq_rate = 0;
+    if (src_mac) memcpy(co.src_mac, src_mac, 6);
+    if (dst_mac) memcpy(co.dst_mac, dst_mac, 6);
+    connections->add(co);
+}
 
 uint32_t Scan::getClientIP(uint8_t* mac) {
     if (!mac || !clients) return 0;
@@ -129,6 +170,18 @@ client_info Scan::getClient(int num) {
         return empty;
     }
     return clients->get(num);
+}
+
+int Scan::connectionCount() {
+    return connections ? connections->size() : 0;
+}
+
+connection_info Scan::getConnection(int num) {
+    if (!connections || num < 0 || num >= connections->size()) {
+        connection_info empty = {0};
+        return empty;
+    }
+    return connections->get(num);
 }
 
 void Scan::start(uint8_t mode) {

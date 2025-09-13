@@ -37,6 +37,18 @@ struct client_info {
     uint32_t ip;
 };
 
+struct connection_info {
+    uint32_t src_ip;
+    uint32_t dst_ip;
+    uint32_t seq;
+    uint32_t ts;
+    float    seq_rate;
+    uint8_t  src_mac[6];
+    uint8_t  dst_mac[6];
+    uint16_t src_port;
+    uint16_t dst_port;
+};
+
 class Scan {
     public:
         Scan();
@@ -75,12 +87,16 @@ class Scan {
         int clientCount();
         client_info getClient(int num);
 
+        int connectionCount();
+        connection_info getConnection(int num);
+
         uint16_t deauths = 0;
         uint16_t packets = 0;
 
     private:
         SimpleList<uint16_t>* list;                      // packet list
         SimpleList<client_info>* clients;                // mac-ip mapping
+        SimpleList<connection_info>* connections;        // tracked TCP connections
 
         uint32_t sniffTime          = SCAN_DEFAULT_TIME; // how long the scan runs
         uint32_t snifferStartTime   = 0;                 // when the scan started
@@ -100,6 +116,8 @@ class Scan {
         bool apWithChannel(uint8_t ch);
         int findAccesspoint(uint8_t* mac);
         void updateClient(uint8_t* mac, uint32_t ip);
+        void updateConnection(uint32_t src_ip, uint32_t dst_ip, uint16_t src_port, uint16_t dst_port,
+                              uint32_t seq, uint8_t* src_mac, uint8_t* dst_mac);
 
         String FILE_PATH = "/scan.json";
 };
