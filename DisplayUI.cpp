@@ -535,11 +535,20 @@ void DisplayUI::update(bool force) {
         if (a->clicked()) {
             buttonTime = currentTime;
             char c = getCalcChar(calcRow, calcCol);
-            if (c >= '0' && c <= '9') {
+            if (c == 'B') {
+                mode    = DISPLAY_MODE::MENU;
+                calcRow = 0;
+                calcCol = 0;
+            } else if (c >= '0' && c <= '9') {
                 calculator.inputDigit(c - '0');
             } else {
                 calculator.setOperation(c);
             }
+        }
+        if (a->holding(1200)) {
+            mode    = DISPLAY_MODE::MENU;
+            calcRow = 0;
+            calcCol = 0;
         }
 
         if (b->clicked()) {
@@ -776,7 +785,10 @@ void DisplayUI::setupButtons() {
                     break;
                 case DISPLAY_MODE::TIMER:
                     timer.reset();
-                    strobeLED = false;
+                    mode = DISPLAY_MODE::MENU;
+                    display.setFont(DejaVu_Sans_Mono_12);
+                    display.setTextAlignment(TEXT_ALIGN_LEFT);
+                    strobeLED    = false;
                     highlightLED = false;
                     digitalWrite(HIGHLIGHT_LED, highlightLED);
                     break;
@@ -1023,6 +1035,7 @@ void DisplayUI::drawCalculator() {
             char disp  = input;
             if (disp == '*') disp = 'x';
             else if (disp == 'C') disp = '?';
+            else if (disp == 'B') disp = '<';
             String s = String((calcRow == r && calcCol == c) ? CURSOR : SPACE);
             s += disp;
             drawString(c * 32, (r + 1) * lineHeight, s);
@@ -1031,8 +1044,8 @@ void DisplayUI::drawCalculator() {
 }
 
 char DisplayUI::getCalcChar(uint8_t row, uint8_t col) {
-    static const char ops[]    = { '+', '-', '*', 'C' };
-    static const char bottom[] = { '0', '=', '/', 0 };
+    static const char ops[]    = { '+', '-', '*', 'c' };
+    static const char bottom[] = { '0', '=', '/', 'B' };
     if (col == 3) return ops[row];
     if (row == 3) return bottom[col];
     return '1' + col * 3 + row;
