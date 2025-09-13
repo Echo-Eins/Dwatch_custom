@@ -91,9 +91,20 @@ void DisplayUI::setup() {
 
 #ifdef HIGHLIGHT_LED
         addMenuNode(&mainMenu, D_LED, [this]() {     // LED
+            strobeLED    = false;
             highlightLED = !highlightLED;
             digitalWrite(HIGHLIGHT_LED, highlightLED);
         });
+        addMenuNode(&mainMenu, D_STROBO, [this]() {  // STROBO
+                    strobeLED = !strobeLED;
+                    if (!strobeLED) {
+                        highlightLED = false;
+                    } else {
+                        highlightLED = true;
+                        strobeTime   = currentTime;
+                    }
+                    digitalWrite(HIGHLIGHT_LED, highlightLED);
+                });
 #endif // ifdef HIGHLIGHT_LED
     });
 
@@ -481,6 +492,14 @@ void DisplayUI::update(bool force) {
     b->update();
 
     draw(force);
+
+#ifdef HIGHLIGHT_LED
+    if (strobeLED && (currentTime - strobeTime > 1000)) {
+        highlightLED = !highlightLED;
+        digitalWrite(HIGHLIGHT_LED, highlightLED);
+        strobeTime = currentTime;
+    }
+#endif // HIGHLIGHT_LED
 
     uint32_t timeout = settings::getDisplaySettings().timeout * 1000;
 

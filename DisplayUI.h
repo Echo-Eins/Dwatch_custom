@@ -84,6 +84,7 @@ class DisplayUI {
     public:
         DISPLAY_MODE mode = DISPLAY_MODE::MENU;
         bool highlightLED = false;
+        bool strobeLED    = false;
 
         Button* up   = NULL;
         Button* down = NULL;
@@ -140,6 +141,7 @@ class DisplayUI {
         uint32_t drawTime   = 0;   // last time a frame was drawn
         uint32_t startTime  = 0;   // when the screen was enabled
         uint32_t buttonTime = 0;   // last time a button was pressed
+        uint32_t strobeTime = 0;   // last time the LED toggled
 
         bool enabled = false;      // display enabled
         bool tempOff = false;

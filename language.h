@@ -350,6 +350,7 @@ const char D_SELECT_ALL[] PROGMEM = "SELECT ALL";
 const char D_DESELECT_ALL[] PROGMEM = "DESELECT ALL";
 const char D_CLONE[] PROGMEM = "CLONE SSID";
 const char D_LED[] PROGMEM = "LED";
+const char D_STROBO[] PROGMEM = "STROBOSCOPE";
 
 // BUTTON TEST
 const char D_UP[] PROGMEM = "UP:";
