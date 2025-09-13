@@ -512,7 +512,7 @@ void DisplayUI::update(bool force) {
         const uint8_t cols = 4;
 
         // Exit calculator with a long press on the select button
-        if (a->holding(1000)) {
+        if (a->getState() && a->getPushTime() > 1000) {
             buttonTime = currentTime;
             mode       = DISPLAY_MODE::MENU;
             calcRow    = 0;
@@ -751,6 +751,7 @@ void DisplayUI::setupButtons() {
     });
 
     a->setOnHolding([this]() {
+        if (mode == DISPLAY_MODE::CALCULATOR) return;
         scrollCounter   = 0;
         scrollCompleted = false;
         scrollTime      = currentTime;
@@ -762,7 +763,7 @@ void DisplayUI::setupButtons() {
                 }
             }
         }
-    }, 800);
+    }, 1200);
 
     // === BUTTON B === //
     b->setOnClicked([this]() {
