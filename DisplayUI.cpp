@@ -511,7 +511,7 @@ void DisplayUI::update(bool force) {
         const uint8_t rows = 4;
         const uint8_t cols = 4;
 
-        if (up->clicked()) {
+        if (up->clicked() || up->holding(buttonDelay)) {
             buttonTime = currentTime;
             if (calcRow > 0) {
                 calcRow--;
@@ -522,7 +522,7 @@ void DisplayUI::update(bool force) {
             }
         }
 
-        if (down->clicked()) {
+        if (down->clicked() || down->holding(buttonDelay)) {
             buttonTime = currentTime;
             if (calcRow < rows - 1) {
                 calcRow++;
