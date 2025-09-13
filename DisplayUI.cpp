@@ -110,14 +110,16 @@ void DisplayUI::setup() {
             digitalWrite(HIGHLIGHT_LED, highlightLED);
         });
         addMenuNode(&mainMenu, D_STROBO, [this]() {  // STROBO
-                    strobeLED = !strobeLED;
-                    if (!strobeLED) {
+                    if (strobeLED) {
+                        strobeLED    = false;
                         highlightLED = false;
+                        digitalWrite(HIGHLIGHT_LED, LOW);
                     } else {
+                        strobeLED    = true;
                         highlightLED = true;
                         strobeTime   = currentTime;
+                        digitalWrite(HIGHLIGHT_LED, HIGH);
                     }
-                    digitalWrite(HIGHLIGHT_LED, highlightLED);
                 });
 #endif // ifdef HIGHLIGHT_LED
     });
@@ -506,44 +508,45 @@ void DisplayUI::update(bool force) {
     b->update();
 
     if (mode == DISPLAY_MODE::CALCULATOR) {
-        const char ops[] = { '+', '-', '*', '/', '=', 'C' };
+        const uint8_t rows = 4;
+        const uint8_t cols = 4;
 
         if (up->clicked()) {
             buttonTime = currentTime;
-            if (calcColumn == 0) {
-                if (calcIndex > 0) calcIndex--;
-                else { calcColumn = 1; calcIndex = 5; }
+            if (calcRow > 0) {
+                calcRow--;
             } else {
-                if (calcIndex > 0) calcIndex--;
-                else { calcColumn = 0; calcIndex = 9; }
+                calcRow = rows - 1;
+                if (calcCol > 0) calcCol--;
+                else calcCol = cols - 1;
             }
         }
 
         if (down->clicked()) {
             buttonTime = currentTime;
-            if (calcColumn == 0) {
-                if (calcIndex < 9) calcIndex++;
-                else { calcColumn = 1; calcIndex = 0; }
+            if (calcRow < rows - 1) {
+                calcRow++;
             } else {
-                if (calcIndex < 5) calcIndex++;
-                else { calcColumn = 0; calcIndex = 0; }
+                calcRow = 0;
+                calcCol = (calcCol + 1) % cols;
             }
         }
 
         if (a->clicked()) {
             buttonTime = currentTime;
-            if (calcColumn == 0) {
-                calculator.inputDigit(calcIndex);
+            char c = getCalcChar(calcRow, calcCol);
+            if (c >= '0' && c <= '9') {
+                calculator.inputDigit(c - '0');
             } else {
-                calculator.setOperation(ops[calcIndex]);
+                calculator.setOperation(c);
             }
         }
 
         if (b->clicked()) {
             buttonTime = currentTime;
-            mode       = DISPLAY_MODE::MENU;
-            calcColumn = 0;
-            calcIndex  = 0;
+            mode    = DISPLAY_MODE::MENU;
+            calcRow = 0;
+            calcCol = 0;
         }
     }
 
@@ -611,6 +614,13 @@ void DisplayUI::setupButtons() {
                 scan.setChannel(wifi_channel + 1);
             } else if (mode == DISPLAY_MODE::CLOCK) {         // when in clock, change time
                 setTime(clockHour, clockMinute + 1, clockSecond);
+            } else if (mode == DISPLAY_MODE::TIMER && !timer.isRunning()) { // when in timer, increase seconds
+                            uint32_t ms = timer.getRemaining();
+                            uint32_t sec = ms / 1000;
+                            uint8_t m = sec / 60;
+                            uint8_t s = sec % 60;
+                            if (++s >= 60) { s = 0; m++; }
+                            timer.setDuration((uint32_t)(m * 60 + s) * 1000);
             }
         }
     });
@@ -628,6 +638,13 @@ void DisplayUI::setupButtons() {
                 scan.setChannel(wifi_channel + 1);
             } else if (mode == DISPLAY_MODE::CLOCK) {         // when in clock, change time
                 setTime(clockHour, clockMinute + 10, clockSecond);
+            } else if (mode == DISPLAY_MODE::TIMER && !timer.isRunning()) { // when in timer, increase minutes
+                            uint32_t ms = timer.getRemaining();
+                            uint32_t sec = ms / 1000;
+                            uint8_t m = sec / 60;
+                            uint8_t s = sec % 60;
+                            m++;
+                            timer.setDuration((uint32_t)(m * 60 + s) * 1000);
             }
         }
     }, buttonDelay);
@@ -646,6 +663,15 @@ void DisplayUI::setupButtons() {
                 scan.setChannel(wifi_channel - 1);
             } else if (mode == DISPLAY_MODE::CLOCK) {         // when in clock, change time
                 setTime(clockHour, clockMinute - 1, clockSecond);
+            } else if (mode == DISPLAY_MODE::TIMER && !timer.isRunning()) { // when in timer, decrease seconds
+                            uint32_t ms = timer.getRemaining();
+                            uint32_t sec = ms / 1000;
+                            uint8_t m = sec / 60;
+                            uint8_t s = sec % 60;
+                            if (m > 0 || s > 0) {
+                                if (s > 0) s--; else { m--; s = 59; }
+                                timer.setDuration((uint32_t)(m * 60 + s) * 1000);
+                            }
             }
         }
     });
@@ -661,10 +687,17 @@ void DisplayUI::setupButtons() {
                 else currentMenu->selected = 0;
             } else if (mode == DISPLAY_MODE::PACKETMONITOR) { // when in packet monitor, change channel
                 scan.setChannel(wifi_channel - 1);
-            }
-
-            else if (mode == DISPLAY_MODE::CLOCK) {           // when in clock, change time
+            } else if (mode == DISPLAY_MODE::CLOCK) {         // when in clock, change time
                 setTime(clockHour, clockMinute - 10, clockSecond);
+            } else if (mode == DISPLAY_MODE::TIMER && !timer.isRunning()) { // when in timer, decrease minutes
+                            uint32_t ms = timer.getRemaining();
+                            uint32_t sec = ms / 1000;
+                            uint8_t m = sec / 60;
+                            uint8_t s = sec % 60;
+                            if (m > 0) {
+                                m--;
+                                timer.setDuration((uint32_t)(m * 60 + s) * 1000);
+                            }
             }
         }
     }, buttonDelay);
@@ -957,7 +990,12 @@ void DisplayUI::drawResetting() {
 }
 
 void DisplayUI::drawTimer() {
-    uint32_t ms = timer.getRemaining();
+    uint32_t ms;
+    if (timer.isRunning()) {
+        ms = timer.getRemaining();
+    } else { // show editable duration before start and while paused
+        ms = timer.getRemaining();
+    }
     uint32_t sec = ms / 1000;
     uint8_t m = sec / 60;
     uint8_t s = sec % 60;
@@ -978,15 +1016,26 @@ void DisplayUI::drawTimer() {
 }
 
 void DisplayUI::drawCalculator() {
-    const char ops[] = { '+', '-', '*', '/', '=', 'C' };
     drawString(0, center(calculator.getDisplay(), maxLen));
-    String line;
-    if (calcColumn == 0) {
-        line = String(CURSOR) + String(calcIndex);
-    } else {
-        line = String(CURSOR) + String(ops[calcIndex]);
+    for (uint8_t r = 0; r < 4; r++) {
+        for (uint8_t c = 0; c < 4; c++) {
+            char input = getCalcChar(r, c);
+            char disp  = input;
+            if (disp == '*') disp = 'x';
+            else if (disp == 'C') disp = '?';
+            String s = String((calcRow == r && calcCol == c) ? CURSOR : SPACE);
+            s += disp;
+            drawString(c * 32, (r + 1) * lineHeight, s);
+        }
     }
-    drawString(2, line);
+}
+
+char DisplayUI::getCalcChar(uint8_t row, uint8_t col) {
+    static const char ops[]    = { '+', '-', '*', 'C' };
+    static const char bottom[] = { '0', '=', '/', 0 };
+    if (col == 3) return ops[row];
+    if (row == 3) return bottom[col];
+    return '1' + col * 3 + row;
 }
 
 void DisplayUI::clearMenu(Menu* menu) {

@@ -158,8 +158,8 @@ class DisplayUI {
         bool probeSelected  = false;
 
         // calculator state
-        uint8_t calcColumn = 0; // 0 digits, 1 operations
-        int8_t  calcIndex  = 0;
+        uint8_t calcRow = 0;
+        uint8_t calcCol = 0;
 
         // menus
         Menu* currentMenu;
@@ -195,6 +195,7 @@ class DisplayUI {
         void drawResetting();
         void drawTimer();
         void drawCalculator();
+        char getCalcChar(uint8_t row, uint8_t col);
         void clearMenu(Menu* menu);
 
         // menu functions
