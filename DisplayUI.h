@@ -161,6 +161,7 @@ class DisplayUI {
         int16_t selectedID     = 0; // i.e. access point ID to draw the apMenu
         uint8_t scrollCounter  = 0; // for horizontal scrolling
         bool    scrollCompleted = false; // has the text scrolled once
+        int     sniffOffset    = 0; // start index for packet detail paging
 
         uint32_t scrollTime = 0;   // last time a character was moved
         uint32_t drawTime   = 0;   // last time a frame was drawn

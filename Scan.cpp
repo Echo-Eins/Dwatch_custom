@@ -42,7 +42,10 @@ void Scan::sniffer(uint8_t* buf, uint16_t len) {
     sniff_packet sp = {0};
     memcpy(sp.src_mac, macFrom, 6);
     memcpy(sp.dst_mac, macTo, 6);
-    sp.len = len;
+    sp.ip_len    = 0;
+    sp.tcp_flags = 0;
+    sp.tcp_seq   = 0;
+    sp.tcp_ack   = 0;
 
     if (toBroadcast || fromBroadcast) sp.type = PKT_BROADCAST;
 
@@ -83,21 +86,29 @@ void Scan::sniffer(uint8_t* buf, uint16_t len) {
                         updateClient(macTo, dst);
                         sp.src_ip = src;
                         sp.dst_ip = dst;
-                        sp.ttl = iphdr[8];
+                        sp.ttl    = iphdr[8];
+                        sp.ip_len = (iphdr[2] << 8) | iphdr[3];
 
                         uint8_t proto = iphdr[9];
                         uint8_t ihl   = (iphdr[0] & 0x0F) * 4;
                         if ((proto == 6) && (len >= hdrLen + 8 + ihl + 20)) { // TCP
-                            uint8_t* tcp = payload + ihl;
+                            uint8_t* tcp      = payload + ihl;
                             uint16_t src_port = (tcp[0] << 8) | tcp[1];
                             uint16_t dst_port = (tcp[2] << 8) | tcp[3];
-                            uint32_t seq = (tcp[4] << 24) | (tcp[5] << 16) | (tcp[6] << 8) | tcp[7];
+                            uint32_t seq      = (tcp[4] << 24) | (tcp[5] << 16) | (tcp[6] << 8) | tcp[7];
+                            uint32_t ack      = (tcp[8] << 24) | (tcp[9] << 16) | (tcp[10] << 8) | tcp[11];
+                            uint8_t flags     = tcp[13];
+
                             updateConnection(src, dst, src_port, dst_port, seq, macFrom, macTo);
-                            sp.type = PKT_TCP;
-                            sp.src_port = src_port;
-                            sp.dst_port = dst_port;
+
+                            sp.type      = PKT_TCP;
+                            sp.src_port  = src_port;
+                            sp.dst_port  = dst_port;
+                            sp.tcp_seq   = seq;
+                            sp.tcp_ack   = ack;
+                            sp.tcp_flags = flags;
                         } else if ((proto == 17) && (len >= hdrLen + 8 + ihl + 8)) { // UDP
-                            uint8_t* udp = payload + ihl;
+                            uint8_t* udp      = payload + ihl;
                             uint16_t src_port = (udp[0] << 8) | udp[1];
                             uint16_t dst_port = (udp[2] << 8) | udp[3];
                             sp.type = (src_port == 5353 || dst_port == 5353) ? PKT_MDNS : PKT_UDP;
@@ -228,10 +239,13 @@ sniff_packet Scan::getSniffPacket(int num) {
         sniff_packet empty = {PKT_BROADCAST};
         memset(empty.src_mac, 0, 6);
         memset(empty.dst_mac, 0, 6);
-        empty.src_ip = empty.dst_ip = 0;
+        empty.src_ip   = empty.dst_ip = 0;
         empty.src_port = empty.dst_port = 0;
-        empty.ttl = 0;
-        empty.len = 0;
+        empty.ttl      = 0;
+        empty.ip_len   = 0;
+        empty.tcp_flags = 0;
+        empty.tcp_seq   = 0;
+        empty.tcp_ack   = 0;
         return empty;
     }
     return sniffPackets->get(num);

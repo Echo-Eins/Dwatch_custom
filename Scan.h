@@ -60,7 +60,10 @@ struct sniff_packet {
     uint16_t src_port;
     uint16_t dst_port;
     uint8_t ttl;
-    uint16_t len;
+    uint16_t ip_len;
+    uint8_t tcp_flags;
+    uint32_t tcp_seq;
+    uint32_t tcp_ack;
 };
 
 #define SNIFF_PKT_BUF_SIZE 20
