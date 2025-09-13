@@ -496,7 +496,7 @@ void DisplayUI::update(bool force) {
     draw(force);
 
 #ifdef HIGHLIGHT_LED
-    if (strobeLED && (currentTime - strobeTime > 1000)) {
+    if (strobeLED && (currentTime - strobeTime > 100)) {
         highlightLED = !highlightLED;
         digitalWrite(HIGHLIGHT_LED, highlightLED);
         strobeTime = currentTime;
