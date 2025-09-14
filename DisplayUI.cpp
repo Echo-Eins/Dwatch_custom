@@ -1033,6 +1033,8 @@ void DisplayUI::drawMenu() {
     if (currentMenu->selected < 0) currentMenu->selected = 0;
     else if (currentMenu->selected >= currentMenu->list->size()) currentMenu->selected = currentMenu->list->size() - 1;
 
+    int y = 0;
+
     // draw menu entries
     for (int i = row; i < currentMenu->list->size() && i < row + 3; i++) {
         tmp = currentMenu->list->get(i).getStr();
@@ -1085,10 +1087,14 @@ void DisplayUI::drawMenu() {
         }
 
         line1 = (currentMenu->selected == i ? CURSOR : SPACE) + line1;
-        line2 = SPACE + line2;
+        drawString(0, y, line1);
+        y += lineHeight;
 
-        drawString(0, (i - row) * lineHeight * 2, line1);
-        drawString(0, (i - row) * lineHeight * 2 + lineHeight, line2);
+        if (line2.length() > 0) {
+            line2 = SPACE + line2;
+            drawString(0, y, line2);
+            y += lineHeight;
+        }
     }
 }
 
