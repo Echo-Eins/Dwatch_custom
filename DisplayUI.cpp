@@ -394,7 +394,11 @@ void DisplayUI::setup() {
         addMenuNode(&stationMenu, D_SNIFF, [this]() { // SNIFF
             memcpy(sniffClientMac, stations.getMac(selectedID), 6);
             scan.setSniffMac(sniffClientMac);
-            scan.start(SCAN_MODE_SNIFFER, 0, SCAN_MODE_OFF, 0, false, wifi_channel);
+
+            uint8_t ch = stations.getCh(selectedID);
+            setWifiChannel(ch, true);
+            scan.start(SCAN_MODE_SNIFFER, 0, SCAN_MODE_OFF, 0, false, ch);
+
             drawInterval = 500;
             mode        = DISPLAY_MODE::CLIENT_SNIFF;
             sniffOffset = 0;
