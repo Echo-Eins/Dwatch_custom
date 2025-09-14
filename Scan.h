@@ -72,6 +72,15 @@ struct sniff_packet {
 
 #define SNIFF_PKT_BUF_SIZE 20
 
+struct station_update {
+    uint8_t mac_from[6];
+    uint8_t mac_to[6];
+    bool    to_broadcast;
+    bool    from_broadcast;
+};
+
+#define STATION_UPDATE_BUF_SIZE 40
+
 class Scan {
     public:
         Scan();
@@ -129,7 +138,10 @@ class Scan {
         SimpleList<uint16_t>* list;                      // packet list
         SimpleList<client_info>* clients;                // mac-ip mapping
         SimpleList<connection_info>* connections;        // tracked TCP connections
-        SimpleList<sniff_packet>* sniffPackets;          // captured packets
+        sniff_packet sniffPackets[SNIFF_PKT_BUF_SIZE];    // captured packets ring buffer
+        SimpleList<station_update>* stationQueue;        // pending station updates
+        int sniffPacketHead = 0;                          // next insert index
+        int sniffPacketCnt  = 0;                          // number of stored packets
         uint8_t sniffMac[6] = {0};
 
         uint32_t sniffTime          = SCAN_DEFAULT_TIME; // how long the scan runs
@@ -137,6 +149,7 @@ class Scan {
         uint32_t snifferOutputTime  = 0;                 // last info output (every 3s)
         uint32_t snifferChannelTime = 0;                 // last time the channel was changed
         uint32_t snifferPacketTime  = 0;                 // last time the packet rate was reseted (every 1s)
+        uint32_t stationUpdateTime  = 0;                 // last station update processing
 
         uint8_t scanMode = 0;
 
@@ -151,6 +164,7 @@ class Scan {
 
         stats_callback_t statsCallback = nullptr;
         void outputStats();
+        void processStationUpdates();
 
         bool apWithChannel(uint8_t ch);
         int findAccesspoint(uint8_t* mac);

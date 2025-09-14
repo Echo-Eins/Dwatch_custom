@@ -16,8 +16,9 @@ Scan::Scan() {
     list    = new SimpleList<uint16_t>;
     clients = new SimpleList<client_info>;
     connections = new SimpleList<connection_info>;
-    sniffPackets = new SimpleList<sniff_packet>;
+    stationQueue = new SimpleList<station_update>;
 }
+
 
 Scan::~Scan() {
     stop();
@@ -31,8 +32,8 @@ Scan::~Scan() {
     delete connections;
     connections = nullptr;
 
-    delete sniffPackets;
-    sniffPackets = nullptr;
+    delete stationQueue;
+    stationQueue = nullptr;
 }
 
 void Scan::onSnifferStats(stats_callback_t cb) {
@@ -51,7 +52,7 @@ void Scan::outputStats() {
         } else {
             sprintf(s, str(SC_OUTPUT_B).c_str(), packets, stations.count(), currentDeauths);
         }
-        prnt(String(s));
+        prnt(s);
     }
     snifferOutputTime = currentTime;
 }
@@ -71,6 +72,17 @@ void Scan::sniffer(uint8_t* buf, uint16_t len) {
     uint8_t type       = (frameCtrl >> 2) & 0x3;
     uint8_t subtype    = (frameCtrl >> 4) & 0xF;
     uint8_t toFrom     = (frameCtrl >> 8) & 0x3;
+
+    const sniffer_settings_t& sniffer = settings::getSnifferSettings();
+
+    if (type == 0 && (subtype == 0x0C || subtype == 0x0A)) {  // deauth or disassoc
+        tmpDeauths++;
+        return;
+    }
+
+    // drop beacon frames, probe requests and probe responses
+    if (sniffer.filter_management &&
+        type == 0 && (subtype == 0x08 || subtype == 0x04 || subtype == 0x05)) return;
 
     // resolve addresses
     uint8_t* addr1 = buf + 4;
@@ -105,18 +117,8 @@ void Scan::sniffer(uint8_t* buf, uint16_t len) {
 
     if (!macTo || !macFrom) return;
 
-    const sniffer_settings_t& sniffer = settings::getSnifferSettings();
-
-    if (type == 0 && (subtype == 0x0C || subtype == 0x0A)) {  // deauth or disassoc
-        tmpDeauths++;
-        return;
-    }
-
-    // drop beacon frames, probe requests and probe responses
-    if (sniffer.filter_management &&
-        type == 0 && (subtype == 0x08 || subtype == 0x04 || subtype == 0x05)) return;
-
     if (!macValid(macTo) || !macValid(macFrom)) return;
+
     bool toBroadcast   = macBroadcast(macTo);
     bool fromBroadcast = macBroadcast(macFrom);
     if (sniffer.filter_multicast) {
@@ -130,6 +132,16 @@ void Scan::sniffer(uint8_t* buf, uint16_t len) {
     bool hasFilter = !isZeroMac(sniffMac);
     if (hasFilter && memcmp(sniffMac, macTo, 6) != 0 && memcmp(sniffMac, macFrom, 6) != 0) return;
 
+    station_update su{};
+    memcpy(su.mac_from, macFrom, 6);
+    memcpy(su.mac_to, macTo, 6);
+    su.to_broadcast   = toBroadcast;
+    su.from_broadcast = fromBroadcast;
+    if (stationQueue->size() >= STATION_UPDATE_BUF_SIZE) {
+        stationQueue->removeFirst();
+    }
+    stationQueue->add(su);
+
     sniff_packet sp{};
     sp.type       = PKT_BROADCAST;
     sp.broadcast  = isBroadcast;
@@ -142,28 +154,12 @@ void Scan::sniffer(uint8_t* buf, uint16_t len) {
     sp.frame_type = type;
     sp.len        = len;
 
-    int accesspointNum = findAccesspoint(macFrom);
-
-    if (accesspointNum >= 0) {
-        stations.add(macTo, accesspoints.getID(accesspointNum));
-    } else {
-        accesspointNum = findAccesspoint(macTo);
-
-        if (accesspointNum >= 0) {
-            stations.add(macFrom, accesspoints.getID(accesspointNum));
-        } else {
-            if (!toBroadcast) stations.add(macTo, STATION_AP_NONE);
-            if (!fromBroadcast) stations.add(macFrom, STATION_AP_NONE);
-        }
-    }
-
         // parse payload for IP addresses
     if (frameCtrl & 0x4000) {
         sp.type = PKT_ENCRYPTED;
-        if (sniffPackets->size() >= SNIFF_PKT_BUF_SIZE) {
-            sniffPackets->removeFirst();
-        }
-        sniffPackets->add(sp);
+        sniffPackets[sniffPacketHead] = sp;
+        sniffPacketHead = (sniffPacketHead + 1) % SNIFF_PKT_BUF_SIZE;
+        if (sniffPacketCnt < SNIFF_PKT_BUF_SIZE) sniffPacketCnt++;
         tmpEncrypted++;
         return; // encrypted, skip further parsing
     }
@@ -241,15 +237,15 @@ void Scan::sniffer(uint8_t* buf, uint16_t len) {
 
         }
     }
-    if (sniffPackets->size() >= SNIFF_PKT_BUF_SIZE) {
-        sniffPackets->removeFirst();
-    }
-    sniffPackets->add(sp);
+    sniffPackets[sniffPacketHead] = sp;
+    sniffPacketHead = (sniffPacketHead + 1) % SNIFF_PKT_BUF_SIZE;
+    if (sniffPacketCnt < SNIFF_PKT_BUF_SIZE) sniffPacketCnt++;
 }
 
 int Scan::findAccesspoint(uint8_t* mac) {
     for (int i = 0; i < accesspoints.count(); i++) {
         if (memcmp(accesspoints.getMac(i), mac, 6) == 0) return i;
+        if ((i & 0x7) == 0) yield();
     }
     return -1;
 }
@@ -265,6 +261,7 @@ void Scan::updateClient(uint8_t* mac, uint32_t ip) {
             }
             return;
         }
+        if ((i & 0x7) == 0) yield();
     }
     client_info ci;
     memcpy(ci.mac, mac, 6);
@@ -286,6 +283,7 @@ void Scan::updateConnection(uint32_t src_ip, uint32_t dst_ip, uint16_t src_port,
             connections->replace(i, co);
             return;
         }
+        if ((i & 0x7) == 0) yield();
     }
     connection_info co = {0};
     co.src_ip   = src_ip;
@@ -298,6 +296,27 @@ void Scan::updateConnection(uint32_t src_ip, uint32_t dst_ip, uint16_t src_port,
     if (src_mac) memcpy(co.src_mac, src_mac, 6);
     if (dst_mac) memcpy(co.dst_mac, dst_mac, 6);
     connections->add(co);
+}
+
+void Scan::processStationUpdates() {
+    while (stationQueue && stationQueue->size() > 0) {
+        station_update su = stationQueue->get(0);
+        stationQueue->removeFirst();
+
+        int accesspointNum = findAccesspoint(su.mac_from);
+        if (accesspointNum >= 0) {
+            stations.add(su.mac_to, accesspoints.getID(accesspointNum));
+        } else {
+            accesspointNum = findAccesspoint(su.mac_to);
+            if (accesspointNum >= 0) {
+                stations.add(su.mac_from, accesspoints.getID(accesspointNum));
+            } else {
+                if (!su.to_broadcast) stations.add(su.mac_to, STATION_AP_NONE);
+                if (!su.from_broadcast) stations.add(su.mac_from, STATION_AP_NONE);
+            }
+        }
+        yield();
+    }
 }
 
 uint32_t Scan::getClientIP(uint8_t* mac) {
@@ -339,15 +358,16 @@ void Scan::setSniffMac(const uint8_t* mac) {
     } else {
         memset(sniffMac, 0, 6);
     }
-    if (sniffPackets) sniffPackets->clear();
+    sniffPacketCnt  = 0;
+    sniffPacketHead = 0;
 }
 
 int Scan::sniffPacketCount() {
-    return sniffPackets ? sniffPackets->size() : 0;
+    return sniffPacketCnt;
 }
 
 sniff_packet Scan::getSniffPacket(int num) {
-    if (!sniffPackets || num < 0 || num >= sniffPackets->size()) {
+    if (num < 0 || num >= sniffPacketCnt) {
         sniff_packet empty = {PKT_BROADCAST, false};
         memset(empty.src_mac, 0, 6);
         memset(empty.dst_mac, 0, 6);
@@ -360,7 +380,8 @@ sniff_packet Scan::getSniffPacket(int num) {
         empty.tcp_ack   = 0;
         return empty;
     }
-    return sniffPackets->get(num);
+    int idx = (sniffPacketHead - sniffPacketCnt + num + SNIFF_PKT_BUF_SIZE) % SNIFF_PKT_BUF_SIZE;
+    return sniffPackets[idx];
 }
 
 void Scan::start(uint8_t mode) {
@@ -502,6 +523,11 @@ void Scan::update() {
             if (scanMode == SCAN_MODE_STATIONS) nextChannel();  // go to next channel an AP is on
             else setChannel(wifi_channel + 1);                  // go to next channel
         }
+    }
+
+    if (currentTime - stationUpdateTime > 100) {
+        stationUpdateTime = currentTime;
+        processStationUpdates();
     }
 
     // APs
