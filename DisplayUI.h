@@ -60,12 +60,6 @@ struct RstClient {
 
 extern SimpleList<RstClient> rstClients;
 
-struct Target {
-        uint8_t ap_id;
-        uint8_t client_mac[6];
-        uint32_t client_ip;
-};
-
 extern Target target;
 
 const char D_INTRO_0[] PROGMEM = "ESP8266 Deauther";

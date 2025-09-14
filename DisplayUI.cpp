@@ -531,6 +531,16 @@ void DisplayUI::setup() {
             }
         });
         addMenuNode(&attackMenu, D_RSTATACK, &rstNetMenu);
+        addMenuNode(&attackMenu, [this]() {
+                    return attack.isRSTRunning() ? str(D_STOP_RST) : str(D_START_RST);
+                }, [this]() {
+                    if (attack.isRSTRunning()) attack.stopRST();
+                    else {
+                        if (target.client_ip != 0) {
+                            attack.startRST(settings::getAttackSettings().timeout * 1000);
+                        }
+                    }
+                });
         addMenuNode(&attackMenu, [this]() { // START
             return leftRight(str(attack.isRunning() ? D_STOP_ATTACK : D_START_ATTACK),
                              attack.getPacketRate() > 0 ? (String)attack.getPacketRate() : String(), maxLen - 1);

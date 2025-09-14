@@ -31,6 +31,14 @@ extern void setWifiChannel(uint8_t ch, bool force);
 extern bool writeFile(String path, String& buf);
 extern int8_t free80211_send(uint8_t* buffer, uint16_t len);
 
+struct Target {
+    uint8_t ap_id;
+    uint8_t client_mac[6];
+    uint32_t client_ip;
+};
+
+extern Target target;
+
 class Attack {
     public:
         Attack();
@@ -72,6 +80,7 @@ class Attack {
         void startRST(uint32_t timeout = 0);
         void stopRST();
         void updateRST();
+        bool isRSTRunning();
 
     private:
         void deauthUpdate();
