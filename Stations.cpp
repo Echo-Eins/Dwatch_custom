@@ -136,6 +136,16 @@ String Stations::getAPMacStr(int num) {
 
     uint8_t* mac = getAPMac(num);
 
+    if (mac == NULL) return String();
+
+    bool zero = true;
+    bool ff   = true;
+    for (int i = 0; i < 6; i++) {
+        if (mac[i] != 0x00) zero = false;
+        if (mac[i] != 0xFF) ff   = false;
+    }
+    if (zero || ff) return String();
+
     return bytesToStr(mac, 6);
 }
 

@@ -356,9 +356,12 @@ void DisplayUI::setup() {
     // STATION MENU
     createMenu(&stationMenu, &stationListMenu, [this]() {
         addMenuNode(&stationMenu, [this]() {
-            return stations.getSelectedStr(selectedID) +
-            (stations.hasName(selectedID) ? stations.getNameStr(selectedID) : stations.getMacVendorStr(selectedID)); // <station
-            // name>
+            String ssid = stations.getAPStr(selectedID);
+            if (ssid.length() == 0) {
+                ssid = stations.getAPMacStr(selectedID);
+                if (ssid.length() == 0) ssid = "Unknown";
+            }
+            return stations.getSelectedStr(selectedID) + ssid; // <ap name>
         }, [this]() {
             stations.getSelected(selectedID) ? stations.deselect(selectedID) : stations.select(selectedID);
         });
