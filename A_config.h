@@ -73,7 +73,7 @@
 
 // ===== DISPLAY ===== //
   #define USE_DISPLAY true
-  #define FLIP_DIPLAY true
+  #define FLIP_DISPLAY true
 
   #define SH1106_I2C
 
@@ -98,7 +98,7 @@
   #define I2C_SDA 5
   #define I2C_SCL 4
 
-// #define FLIP_DIPLAY true
+// #define FLIP_DISPLAY true
 
 // ===== BUTTONS ===== //
   #define BUTTON_UP 14
@@ -124,7 +124,7 @@
   #define SPI_DC 4
   #define SPI_CS 15
 
-// #define FLIP_DIPLAY true
+// #define FLIP_DISPLAY true
 
 // ===== BUTTONS ===== //
   #define BUTTON_UP 0
@@ -164,7 +164,7 @@
 
 // ===== DISPLAY ===== //
   #define SH1106_I2C
-  #define FLIP_DIPLAY true
+  #define FLIP_DISPLAY true
   #define DISPLAY_TEXT "Hardware by DSTIKE"
 
 // ===== BUTTONS ===== //
@@ -181,7 +181,7 @@
 
 // ===== DISPLAY ===== //
   #define SH1106_I2C
-  #define FLIP_DIPLAY true
+  #define FLIP_DISPLAY true
   #define DISPLAY_TEXT "Hardware by DSTIKE"
 
 // ===== BUTTONS ===== //
@@ -206,7 +206,7 @@
 
 // ===== DISPLAY ===== //
   #define SH1106_I2C
-  #define FLIP_DIPLAY true
+  #define FLIP_DISPLAY true
   #define DISPLAY_TEXT "Hardware by DSTIKE"
 
 // ===== BUTTONS ===== //
@@ -224,7 +224,7 @@
 
 // ===== DISPLAY ===== //
   #define SSD1306_I2C
-  #define FLIP_DIPLAY true
+  #define FLIP_DISPLAY true
   #define DISPLAY_TEXT "Hardware by DSTIKE"
 
 // ===== BUTTONS ===== //
@@ -242,7 +242,7 @@
 
 // ===== DISPLAY ===== //
   #define SH1106_I2C
-  #define FLIP_DIPLAY true
+  #define FLIP_DISPLAY true
   #define DISPLAY_TEXT "Hardware by DSTIKE"
 
 // ===== BUTTONS ===== //
@@ -259,7 +259,7 @@
 
 // ===== DISPLAY ===== //
   #define SH1106_I2C
-  #define FLIP_DIPLAY true
+  #define FLIP_DISPLAY true
   #define DISPLAY_TEXT "Hardware by DSTIKE"
 
 // ===== BUTTONS ===== //
@@ -278,7 +278,7 @@
 
 // ===== DISPLAY ===== //
   #define SH1106_I2C
-  #define FLIP_DIPLAY true
+  #define FLIP_DISPLAY true
   #define DISPLAY_TEXT "Hardware by DSTIKE"
 
   #define RTC_DS3231
@@ -306,7 +306,7 @@
 
 // ===== DISPLAY ===== //
   #define SH1106_I2C
-  #define FLIP_DIPLAY true
+  #define FLIP_DISPLAY true
   #define DISPLAY_TEXT "Hardware by DSTIKE"
 
 // ===== BUTTONS ===== //
@@ -325,7 +325,7 @@
 
 // ===== DISPLAY ===== //
   #define SH1106_I2C
-  #define FLIP_DIPLAY true
+  #define FLIP_DISPLAY true
   #define DISPLAY_TEXT "Hardware by DSTIKE"
 
   #define RTC_DS3231
@@ -551,9 +551,9 @@
   #define DISPLAY_TEXT ""
 #endif /* ifndef DISPLAY_TEXT */
 
-#ifndef FLIP_DIPLAY
-  #define FLIP_DIPLAY false
-#endif /* ifndef FLIP_DIPLAY */
+#ifndef FLIP_DISPLAY
+  #define FLIP_DISPLAY false
+#endif /* ifndef FLIP_DISPLAY */
 
 #if !defined(SSD1306_I2C) && !defined(SSD1306_SPI) && !defined(SH1106_I2C) && !defined(SH1106_SPI)
   #define SSD1306_I2C
@@ -711,7 +711,7 @@
    // ===== DISPLAY ===== //
  #define USE_DISPLAY false
  #define DISPLAY_TIMEOUT 600
- #define FLIP_DIPLAY false
+ #define FLIP_DISPLAY false
 
  #define SSD1306_I2C
  #define SSD1306_SPI

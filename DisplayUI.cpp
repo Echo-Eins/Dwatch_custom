@@ -48,7 +48,7 @@ void DisplayUI::configInit() {
 
     display.setContrast(255);
 
-    if (FLIP_DIPLAY) display.flipScreenVertically();
+    if (FLIP_DISPLAY) display.flipScreenVertically();
 
     display.clear();
     display.display();
