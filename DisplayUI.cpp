@@ -220,8 +220,12 @@ void DisplayUI::setup() {
 
         for (int i = 0; i < c; i++) {
             addMenuNode(&stationListMenu, [i]() {
-                return b2a(stations.getSelected(i)) +
-                (stations.hasName(i) ? stations.getNameStr(i) : stations.getMacVendorStr(i));
+                String ssid = stations.getAPStr(i);
+                if (ssid.length() == 0) {
+                    ssid = stations.getAPMacStr(i);
+                    if (ssid.length() == 0) ssid = "Unknown";
+                }
+                return b2a(stations.getSelected(i)) + ssid + ":\n" + stations.getMacStr(i);
             }, [this, i]() {
                 stations.getSelected(i) ? stations.deselect(i) : stations.select(i);
             }, [this, i]() {
@@ -1021,43 +1025,70 @@ void DisplayUI::drawButtonTest() {
 
 void DisplayUI::drawMenu() {
     String tmp;
-    int    tmpLen;
-    int    row = (currentMenu->selected / 5) * 5;
+    String line1;
+    String line2;
+    int    row = (currentMenu->selected / 3) * 3;
 
     // correct selected if it's off
     if (currentMenu->selected < 0) currentMenu->selected = 0;
     else if (currentMenu->selected >= currentMenu->list->size()) currentMenu->selected = currentMenu->list->size() - 1;
 
     // draw menu entries
-    for (int i = row; i < currentMenu->list->size() && i < row + 5; i++) {
-        tmp    = currentMenu->list->get(i).getStr();
-        tmpLen = tmp.length();
+    for (int i = row; i < currentMenu->list->size() && i < row + 3; i++) {
+        tmp = currentMenu->list->get(i).getStr();
 
+        int newlineIndex = tmp.indexOf('\n');
+        if (newlineIndex >= 0) {
+            line1 = tmp.substring(0, newlineIndex);
+            line2 = tmp.substring(newlineIndex + 1);
+        } else {
+            line1 = tmp;
+            line2 = "";
+        }
         // horizontal scrolling
-        if ((currentMenu->selected == i) && (tmpLen >= maxLen)) {
-            int maxScroll = tmpLen - (maxLen - 1);
+        if (currentMenu->selected == i) {
+            int len1 = line1.length();
+            int len2 = line2.length();
 
-            if (!scrollCompleted) {
-                tmp = tmp.substring(scrollCounter, scrollCounter + maxLen - 1);
+            if (len1 >= maxLen || len2 >= maxLen) {
+                int maxScroll1 = len1 - (maxLen - 1);
+                int maxScroll2 = len2 - (maxLen - 1);
+                if (maxScroll1 < 0) maxScroll1 = 0;
+                if (maxScroll2 < 0) maxScroll2 = 0;
+                int maxScroll   = max(maxScroll1, maxScroll2);
 
-                if (((scrollCounter > 0) && (scrollTime < currentTime - scrollSpeed)) ||
-                    ((scrollCounter == 0) && (scrollTime < currentTime - scrollSpeed * 4))) {
-                    scrollTime = currentTime;
+                if (!scrollCompleted) {
+                    int offset1 = min(scrollCounter, maxScroll1);
+                    int offset2 = min(scrollCounter, maxScroll2);
+                    line1       = line1.substring(offset1, offset1 + maxLen - 1);
+                    line2       = line2.substring(offset2, offset2 + maxLen - 1);
 
-                    if (scrollCounter < maxScroll) {
-                        scrollCounter++;
-                    } else {
-                        scrollCounter   = 0;
-                        scrollCompleted = true;
+                    if (((scrollCounter > 0) && (scrollTime < currentTime - scrollSpeed)) ||
+                        ((scrollCounter == 0) && (scrollTime < currentTime - scrollSpeed * 4))) {
+                        scrollTime = currentTime;
+
+                        if (scrollCounter < maxScroll) {
+                            scrollCounter++;
+                        } else {
+                            scrollCounter   = 0;
+                            scrollCompleted = true;
+                        }
                     }
-                    }
-            } else {
-                tmp = tmp.substring(0, maxLen - 1);
+                } else {
+                    line1 = line1.substring(0, maxLen - 1);
+                    line2 = line2.substring(0, maxLen - 1);
+                }
             }
+        } else {
+            if (line1.length() > maxLen - 1) line1 = line1.substring(0, maxLen - 1);
+            if (line2.length() > maxLen - 1) line2 = line2.substring(0, maxLen - 1);
         }
 
-        tmp = (currentMenu->selected == i ? CURSOR : SPACE) + tmp;
-        drawString(0, (i - row) * 12, tmp);
+        line1 = (currentMenu->selected == i ? CURSOR : SPACE) + line1;
+        line2 = SPACE + line2;
+
+        drawString(0, (i - row) * lineHeight * 2, line1);
+        drawString(0, (i - row) * lineHeight * 2 + lineHeight, line2);
     }
 }
 
