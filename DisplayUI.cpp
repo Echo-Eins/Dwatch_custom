@@ -1168,7 +1168,12 @@ void DisplayUI::drawLoadingScan() {
     String percentage;
 
     if (scan.isScanning()) {
-        percentage = String(scan.getPercentage()) + '%';
+        uint8_t percent = scan.getPercentage();
+        if (percent > 0) {
+            percentage = String(percent) + '%';
+        } else {
+            percentage = String("0%");
+        }
     } else {
         percentage = str(DSP_SCAN_DONE);
     }

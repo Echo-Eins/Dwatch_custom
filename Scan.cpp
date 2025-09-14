@@ -25,13 +25,13 @@ void Scan::onSnifferStats(stats_callback_t cb) {
 
 void Scan::outputStats() {
     uint16_t currentDeauths = deauths + tmpDeauths;
+    uint8_t percent = getPercentage();
     if (statsCallback) {
-        statsCallback(packets, stations.count(), currentDeauths,
-                      sniffTime > 0 ? getPercentage() : 0);
+        statsCallback(packets, stations.count(), currentDeauths, percent);
     } else {
         char s[100];
-        if (sniffTime > 0) {
-            sprintf(s, str(SC_OUTPUT_A).c_str(), getPercentage(), packets, stations.count(), currentDeauths);
+        if (percent > 0) {
+            sprintf(s, str(SC_OUTPUT_A).c_str(), percent, packets, stations.count(), currentDeauths);
         } else {
             sprintf(s, str(SC_OUTPUT_B).c_str(), packets, stations.count(), currentDeauths);
         }
@@ -661,7 +661,7 @@ bool Scan::isSniffing() {
 }
 
 uint8_t Scan::getPercentage() {
-    if (!isSniffing()) return 0;
+    if (!isSniffing() || sniffTime == 0) return 0;
 
     return (currentTime - snifferStartTime) / (sniffTime / 100);
 }
