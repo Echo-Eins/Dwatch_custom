@@ -36,11 +36,12 @@ void CLI::enable() {
 }
 
 void CLI::disable() {
-    enabled = true;
+    enabled = false;
     prntln(CLI_SERIAL_DISABLED);
 }
 
 void CLI::update() {
+    if (!enabled) return;
     // when serial available, read input
     if (Serial.available() > 0) {
         String input = Serial.readStringUntil('\n');
