@@ -176,7 +176,9 @@ void CLI::runLine(String input) {
         }
     }
 
-    tmp.replace(BACKSLASH + SEMICOLON + SEMICOLON, SEMICOLON + SEMICOLON);
+    // Replace escaped semicolons (\;;) with literal semicolons
+    tmp.replace(String(BACKSLASH) + SEMICOLON + SEMICOLON,
+                String(SEMICOLON) + SEMICOLON);
 
     if (tmp.length() > 0) runCommand(tmp);
 }
