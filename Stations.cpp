@@ -121,14 +121,16 @@ void Stations::print(int num, bool header, bool footer) {
 }
 
 String Stations::getAPStr(int num) {
-    if (getAP(num) < 0) return String();
+    if (!check(num)) return String();
+    int ap = getAP(num);
+    if (ap < 0) return String("unknown");
 
-    return accesspoints.getSSID(getAP(num));
+    return accesspoints.getSSID(ap);
 }
 
 uint8_t* Stations::getAPMac(int num) {
     if (!check(num)) return 0;
-
+    if (getAP(num) < 0) return 0;
     return WiFi.BSSID(list->get(num).ap);
 }
 
@@ -152,6 +154,8 @@ String Stations::getAPMacStr(int num) {
 
 int Stations::getAP(int num) {
     if (!check(num)) return -1;
+
+    if (list->get(num).ap == STATION_AP_NONE) return -1;
 
     return accesspoints.find(list->get(num).ap);
 }
@@ -277,19 +281,19 @@ void Stations::remove(int num) {
 }
 
 void Stations::select(String ssid) {
-    for (int i = 0; i < list->size(); i++) {
+    for (int i = list->size() - 1; i >= 0; --i) {
         if (getAPStr(i).equalsIgnoreCase(ssid)) select(i);
     }
 }
 
 void Stations::deselect(String ssid) {
-    for (int i = 0; i < list->size(); i++) {
+    for (int i = list->size() - 1; i >= 0; --i) {
         if (getAPStr(i).equalsIgnoreCase(ssid)) deselect(i);
     }
 }
 
 void Stations::remove(String ssid) {
-    for (int i = 0; i < list->size(); i++) {
+    for (int i = list->size() - 1; i >= 0; --i) {
         if (getAPStr(i).equalsIgnoreCase(ssid)) remove(i);
     }
 }
@@ -359,7 +363,11 @@ void Stations::internal_add(uint8_t* mac, int accesspointNum) {
     Station newStation;
 
     newStation.ap       = accesspointNum;
-    newStation.ch       = accesspoints.getCh(accesspointNum);
+    if (accesspointNum == STATION_AP_NONE) {
+        newStation.ch = wifi_channel;
+    } else {
+        newStation.ch = accesspoints.getCh(accesspointNum);
+    }
     newStation.mac      = (uint8_t*)malloc(6);
     newStation.pkts     = (uint32_t*)malloc(sizeof(uint32_t));
     newStation.time     = (uint32_t*)malloc(sizeof(uint32_t));

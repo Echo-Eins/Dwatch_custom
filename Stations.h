@@ -12,6 +12,8 @@ extern "C" {
 #include "Names.h"
 
 #define STATION_LIST_SIZE 60
+#define STATION_AP_NONE 0xFF
+
 extern Accesspoints accesspoints;
 extern Names    names;
 extern uint8_t  wifi_channel;

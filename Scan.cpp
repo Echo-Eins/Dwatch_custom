@@ -103,6 +103,9 @@ void Scan::sniffer(uint8_t* buf, uint16_t len) {
 
         if (accesspointNum >= 0) {
             stations.add(macFrom, accesspoints.getID(accesspointNum));
+        } else {
+            if (!toBroadcast) stations.add(macTo, STATION_AP_NONE);
+            if (!fromBroadcast) stations.add(macFrom, STATION_AP_NONE);
         }
     }
 
@@ -331,6 +334,8 @@ void Scan::start(uint8_t mode, uint32_t time, uint8_t nextmode, uint32_t continu
 
     /* Station Scan */
     else if (mode == SCAN_MODE_STATIONS) {
+        // remove old results
+        stations.removeAll();
         // reset sniff filter
         memset(sniffMac, 0, 6);
         // start station scan
