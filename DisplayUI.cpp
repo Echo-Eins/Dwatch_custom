@@ -1027,16 +1027,34 @@ void DisplayUI::drawMenu() {
     String tmp;
     String line1;
     String line2;
-    int    row = (currentMenu->selected / 3) * 3;
+    int maxLines = screenHeight / lineHeight;
 
     // correct selected if it's off
-    if (currentMenu->selected < 0) currentMenu->selected = 0;
-    else if (currentMenu->selected >= currentMenu->list->size()) currentMenu->selected = currentMenu->list->size() - 1;
+    if (currentMenu->selected < 0)
+        currentMenu->selected = 0;
+    else if (currentMenu->selected >= currentMenu->list->size())
+        currentMenu->selected = currentMenu->list->size() - 1;
 
-    int y = 0;
+    // determine starting index so that selected item is visible
+    int startIndex = 0;
+    int lineSum    = 0;
+    for (int i = 0; i <= currentMenu->selected && i < currentMenu->list->size(); i++) {
+        tmp               = currentMenu->list->get(i).getStr();
+        int linesForEntry = tmp.indexOf('\n') >= 0 ? 2 : 1;
+        lineSum += linesForEntry;
+        while (lineSum > maxLines) {
+            String early = currentMenu->list->get(startIndex).getStr();
+            lineSum -= early.indexOf('\n') >= 0 ? 2 : 1;
+            startIndex++;
+        }
+    }
+
+    int y         = 0;
+    int linesUsed = 0;int y         = 0;
+    int linesUsed = 0;
 
     // draw menu entries
-    for (int i = row; i < currentMenu->list->size() && i < row + 3; i++) {
+    for (int i = startIndex; i < currentMenu->list->size(); i++) {
         tmp = currentMenu->list->get(i).getStr();
 
         int newlineIndex = tmp.indexOf('\n');
@@ -1047,6 +1065,10 @@ void DisplayUI::drawMenu() {
             line1 = tmp;
             line2 = "";
         }
+
+        int linesForEntry = line2.length() > 0 ? 2 : 1;
+        if (linesUsed + linesForEntry > maxLines) break;
+
         // horizontal scrolling
         if (currentMenu->selected == i) {
             int len1 = line1.length();
@@ -1089,11 +1111,13 @@ void DisplayUI::drawMenu() {
         line1 = (currentMenu->selected == i ? CURSOR : SPACE) + line1;
         drawString(0, y, line1);
         y += lineHeight;
+        linesUsed++;
 
         if (line2.length() > 0) {
             line2 = SPACE + line2;
             drawString(0, y, line2);
             y += lineHeight;
+            linesUsed++;
         }
     }
 }
