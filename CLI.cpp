@@ -794,8 +794,14 @@ void CLI::runCommand(String input) {
         else if (eqls(str, S_JSON_FILTERENC)) newSettings.sniffer.filter_encrypted = boolVal;
 
         // AP
-        else if (eqls(str, S_JSON_SSID)) strncpy(newSettings.ap.ssid, strVal.c_str(), 32);
-        else if (eqls(str, S_JSON_PASSWORD)) strncpy(newSettings.ap.password, strVal.c_str(), 64);
+        else if (eqls(str, S_JSON_SSID)) {
+            strncpy(newSettings.ap.ssid, strVal.c_str(), sizeof(newSettings.ap.ssid) - 1);
+            newSettings.ap.ssid[sizeof(newSettings.ap.ssid) - 1] = '\0';
+        }
+        else if (eqls(str, S_JSON_PASSWORD)) {
+            strncpy(newSettings.ap.password, strVal.c_str(), sizeof(newSettings.ap.password) - 1);
+            newSettings.ap.password[sizeof(newSettings.ap.password) - 1] = '\0';
+        }
         else if (eqls(str, S_JSON_HIDDEN)) newSettings.ap.hidden = boolVal;
         else if (eqls(str, S_JSON_IP)) strToIP(strVal, newSettings.ap.ip);
 
@@ -803,7 +809,10 @@ void CLI::runCommand(String input) {
         else if (eqls(str, S_JSON_WEBINTERFACE)) newSettings.web.enabled = boolVal;
         else if (eqls(str, S_JSON_CAPTIVEPORTAL)) newSettings.web.captive_portal = boolVal;
         else if (eqls(str, S_JSON_WEB_SPIFFS)) newSettings.web.use_spiffs = boolVal;
-        else if (eqls(str, S_JSON_LANG)) strncpy(newSettings.web.lang, strVal.c_str(), 3);
+        else if (eqls(str, S_JSON_LANG)) {
+            strncpy(newSettings.web.lang, strVal.c_str(), sizeof(newSettings.web.lang) - 1);
+            newSettings.web.lang[sizeof(newSettings.web.lang) - 1] = '\0';
+        }
 
         // CLI
         else if (eqls(str, S_JSON_SERIALINTERFACE)) newSettings.cli.enabled = boolVal;

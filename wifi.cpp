@@ -62,7 +62,8 @@ namespace wifi {
         if (path.length() > 32) {
             debuglnF("ERROR: Path longer than 32 characters");
         } else {
-            strncpy(ap_settings.path, path.c_str(), 32);
+            strncpy(ap_settings.path, path.c_str(), sizeof(ap_settings.path) - 1);
+            ap_settings.path[sizeof(ap_settings.path) - 1] = '\0';
         }
     }
 
@@ -70,7 +71,8 @@ namespace wifi {
         if (ssid.length() > 32) {
             debuglnF("ERROR: SSID longer than 32 characters");
         } else {
-            strncpy(ap_settings.ssid, ssid.c_str(), 32);
+            strncpy(ap_settings.ssid, ssid.c_str(), sizeof(ap_settings.ssid) - 1);
+            ap_settings.ssid[sizeof(ap_settings.ssid) - 1] = '\0';
         }
     }
 
@@ -80,7 +82,8 @@ namespace wifi {
         } else if (password.length() < 8) {
             debuglnF("ERROR: Password must be at least 8 characters long");
         } else {
-            strncpy(ap_settings.password, password.c_str(), 64);
+            strncpy(ap_settings.password, password.c_str(), sizeof(ap_settings.password) - 1);
+            ap_settings.password[sizeof(ap_settings.password) - 1] = '\0';
         }
     }
 

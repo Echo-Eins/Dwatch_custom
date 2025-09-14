@@ -169,8 +169,10 @@ namespace settings {
         data.sniffer.filter_encrypted  = FILTER_ENCRYPTED;
         data.sniffer.output_interval   = SNIFFER_OUTPUT_INTERVAL;
 
-        strncpy(data.ap.ssid, AP_SSID, 32);
-        strncpy(data.ap.password, AP_PASSWD, 64);
+        strncpy(data.ap.ssid, AP_SSID, sizeof(data.ap.ssid) - 1);
+        data.ap.ssid[sizeof(data.ap.ssid) - 1] = '\0';
+        strncpy(data.ap.password, AP_PASSWD, sizeof(data.ap.password) - 1);
+        data.ap.password[sizeof(data.ap.password) - 1] = '\0';
         data.ap.hidden = AP_HIDDEN;
         uint8_t ip[4] = AP_IP_ADDR;
 
