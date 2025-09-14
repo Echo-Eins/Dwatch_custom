@@ -26,13 +26,17 @@ void Scan::sniffer(uint8_t* buf, uint16_t len) {
 
     if (len < 28) return;  // drop frames that are too short to have a valid MAC header
 
-    if ((buf[12] == 0xc0) || (buf[12] == 0xa0)) {
+    uint16_t frameCtrl = buf[0] | (buf[1] << 8);
+    uint8_t type       = (frameCtrl >> 2) & 0x3;
+    uint8_t subtype    = (frameCtrl >> 4) & 0xF;
+
+    if (type == 0 && (subtype == 0x0C || subtype == 0x0A)) {  // deauth or disassoc
         tmpDeauths++;
         return;
     }
 
-    // drop beacon frames, probe requests/responses and deauth/disassociation frames
-    if ((buf[12] == 0x80) || (buf[12] == 0x40) || (buf[12] == 0x50) /* || buf[12] == 0xc0 || buf[12] == 0xa0*/) return;
+    // drop beacon frames, probe requests and probe responses
+    if (type == 0 && (subtype == 0x08 || subtype == 0x04 || subtype == 0x05)) return;
 
     uint8_t* macTo   = &buf[16];
     uint8_t* macFrom = &buf[22];
@@ -71,10 +75,7 @@ void Scan::sniffer(uint8_t* buf, uint16_t len) {
 
     if (sp.type != PKT_BROADCAST) {
         // parse payload for IP addresses
-        uint16_t frameCtrl = buf[0] | (buf[1] << 8);
         if (frameCtrl & 0x4000) return; // encrypted, skip
-        uint8_t type    = (frameCtrl >> 2) & 0x3;
-        uint8_t subtype = (frameCtrl >> 4) & 0xF;
         if (type == 2) { // data frame
             int hdrLen = 24;
             uint8_t toFrom = (frameCtrl >> 8) & 0x3;
