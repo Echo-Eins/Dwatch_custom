@@ -5,6 +5,10 @@
 #include "settings.h"
 #include <string.h>
 
+extern uint8_t bootProgress;
+extern bool    bootLoaded;
+
+
 SimpleList<RstClient> rstClients;
 Target target;
 
@@ -444,7 +448,14 @@ void DisplayUI::setup() {
         }, NULL);                                                                      // Seen: <1min
 
         addMenuNode(&stationMenu, D_SNIFF, [this]() { // SNIFF
-            memcpy(sniffClientMac, stations.getMac(selectedID), 6);
+            uint8_t* mac = stations.getMac(selectedID);
+            if (!mac) {
+                prnt(ST_ERROR_ID);
+                prntln(selectedID);
+                return;
+            }
+
+            memcpy(sniffClientMac, mac, 6);
             scan.setSniffMac(sniffClientMac);
 
             uint8_t ch = stations.getCh(selectedID);
@@ -455,7 +466,7 @@ void DisplayUI::setup() {
             scan.start(SCAN_MODE_SNIFFER, 0, SCAN_MODE_OFF, 0, false, ch);
 
             display.setFont(DejaVu_Sans_Mono_12);
-                        display.setTextAlignment(TEXT_ALIGN_LEFT);
+            display.setTextAlignment(TEXT_ALIGN_LEFT);
 
             drawInterval = settings::getSnifferSettings().output_interval;
             mode        = DISPLAY_MODE::CLIENT_SNIFF;
@@ -1302,6 +1313,13 @@ void DisplayUI::drawIntro() {
     drawString(0, center(str(D_INTRO_0), maxLen));
     drawString(1, center(str(D_INTRO_1), maxLen));
     drawString(2, center(DEAUTHER_VERSION, maxLen));
+
+    if (!bootLoaded) {
+        display.drawProgressBar(4, 32, 120, 8, bootProgress);
+    } else {
+        drawString(3, center(str(D_READY), maxLen));
+    }
+
     if (scan.isScanning()) {
         if (currentTime - startTime >= screenIntroTime+4500) drawString(4, left(str(D_SCANNING_3), maxLen));
         else if (currentTime - startTime >= screenIntroTime+3000) drawString(4, left(str(D_SCANNING_2), maxLen));

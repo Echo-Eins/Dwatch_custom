@@ -70,6 +70,7 @@ const char D_SCANNING_0[] PROGMEM = "> Scanning";
 const char D_SCANNING_1[] PROGMEM = "> Scanning.";
 const char D_SCANNING_2[] PROGMEM = "> Scanning..";
 const char D_SCANNING_3[] PROGMEM = "> Scanning...";
+const char D_READY[] PROGMEM      = "Ready";
 
 struct MenuNode {
     std::function<String()>getStr; // function used to create the displayed string

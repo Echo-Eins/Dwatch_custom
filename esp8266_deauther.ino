@@ -35,6 +35,7 @@ extern "C" {
 #include "A_config.h"
 
 #include "led.h"
+#include <Ticker.h>
 
 // Run-Time Variables //
 Names names;
@@ -55,7 +56,15 @@ simplebutton::Button* resetButton;
 uint32_t autosaveTime = 0;
 uint32_t currentTime  = 0;
 
+Ticker loadTicker;
+uint8_t bootProgress = 0;
+bool bootLoaded      = false;
+bool loadRequested   = false;
+
 bool booted = false;
+
+void deferredLoad();
+void setLoadFlag();
 
 void setup() {
     // for random generator
@@ -121,10 +130,8 @@ void setup() {
         displayUI.mode = DISPLAY_MODE::INTRO;
     }
 
-    // load everything else
-    names.load();
-    ssids.load();
-    cli.load();
+    // schedule loading of larger resources
+    loadTicker.once(1, setLoadFlag);
 
     // create scan.json
     scan.setup();
@@ -154,8 +161,35 @@ void setup() {
     resetButton = new ButtonPullup(RESET_BUTTON);
 }
 
+void setLoadFlag() {
+    loadRequested = true;
+}
+
+void deferredLoad() {
+    bootProgress = 0;
+    displayUI.update(true);
+
+    names.load();
+    bootProgress = 33;
+    displayUI.update(true);
+
+    ssids.load();
+    bootProgress = 66;
+    displayUI.update(true);
+
+    cli.load();
+    bootProgress = 100;
+    bootLoaded = true;
+    displayUI.update(true);
+}
+
 void loop() {
     currentTime = millis();
+
+    if (loadRequested) {
+        loadRequested = false;
+        deferredLoad();
+    }
 
     led::update();   // update LED color
     wifi::update();  // manage access point
