@@ -44,7 +44,7 @@ extern bool equalsKeyword(const char* str, const char* keyword);
 class CLI {
     public:
         CLI();
-        ~CLI();
+        ~CLI(); // destructor cleans up allocated lists
 
         void load();
         void load(String filepath);

@@ -16,7 +16,12 @@ CLI::CLI() {
     queue = new SimpleList<String>;
 }
 
-CLI::~CLI() {}
+CLI::~CLI() {
+    delete list;
+    list = nullptr;
+    delete queue;
+    queue = nullptr;
+}
 
 void CLI::load() {
     String defaultValue = str(CLI_DEFAULT_AUTOSTART);
