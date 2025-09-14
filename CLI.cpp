@@ -163,9 +163,11 @@ void CLI::runLine(String input) {
     String tmp;
 
     for (int i = 0; i < input.length(); i++) {
+        bool prevIsBackslash = (i > 0) ? (input.charAt(i - 1) == BACKSLASH) : false;
+
         // when 2 semicolons in a row without a backslash escaping the first
-        if ((input.charAt(i) == SEMICOLON) && (input.charAt(i + 1) == SEMICOLON) &&
-            (input.charAt(i - 1) != BACKSLASH)) {
+        if (i > 0 && i + 1 < input.length() && (input.charAt(i) == SEMICOLON) &&
+            (input.charAt(i + 1) == SEMICOLON) && !prevIsBackslash) {
             runCommand(tmp);
             tmp = String();
             i++;
