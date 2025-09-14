@@ -160,7 +160,9 @@ void Scan::sniffer(uint8_t* buf, uint16_t len) {
         // parse payload for IP addresses
     if (frameCtrl & 0x4000) {
         sp.type = PKT_ENCRYPTED;
-        if (sniffPackets->size() >= SNIFF_PKT_BUF_SIZE) sniffPackets->shift();
+        if (sniffPackets->size() >= SNIFF_PKT_BUF_SIZE) {
+            sniffPackets->removeFirst();
+        }
         sniffPackets->add(sp);
         tmpEncrypted++;
         return; // encrypted, skip further parsing
@@ -239,7 +241,9 @@ void Scan::sniffer(uint8_t* buf, uint16_t len) {
 
         }
     }
-    if (sniffPackets->size() >= SNIFF_PKT_BUF_SIZE) sniffPackets->shift();
+    if (sniffPackets->size() >= SNIFF_PKT_BUF_SIZE) {
+        sniffPackets->removeFirst();
+    }
     sniffPackets->add(sp);
 }
 

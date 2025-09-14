@@ -454,6 +454,9 @@ void DisplayUI::setup() {
                         });
             scan.start(SCAN_MODE_SNIFFER, 0, SCAN_MODE_OFF, 0, false, ch);
 
+            display.setFont(DejaVu_Sans_Mono_12);
+                        display.setTextAlignment(TEXT_ALIGN_LEFT);
+
             drawInterval = settings::getSnifferSettings().output_interval;
             mode        = DISPLAY_MODE::CLIENT_SNIFF;
             sniffOffset = 0;
@@ -916,6 +919,8 @@ void DisplayUI::setupButtons() {
                                         }
                     drawInterval = 100;
                     mode = DISPLAY_MODE::MENU;
+                    display.setFont(DejaVu_Sans_Mono_12);
+                    display.setTextAlignment(TEXT_ALIGN_LEFT);
                     break;
 
                 case DISPLAY_MODE::CLOCK:
@@ -968,6 +973,8 @@ void DisplayUI::setupButtons() {
                                         }
                     drawInterval = 100;
                     mode = DISPLAY_MODE::MENU;
+                    display.setFont(DejaVu_Sans_Mono_12);
+                    display.setTextAlignment(TEXT_ALIGN_LEFT);
                     break;
 
                 case DISPLAY_MODE::CLOCK:
@@ -1028,7 +1035,7 @@ void DisplayUI::draw(bool force) {
 #else // ifdef RTC_DS3231
         if (currentTime - clockTime >= 1000) {
             setTime(clockHour, clockMinute, ++clockSecond);
-            clockTime += 1000;
+            clockTime = currentTime;
         }
 #endif // ifdef RTC_DS3231
 
@@ -1217,16 +1224,17 @@ void DisplayUI::drawPacketMonitor() {
         int y = 0;
 
         while (i < SCAN_PACKET_LIST_SIZE && x < screenWidth) {
-            y = (screenHeight-1) - (scan.getPackets(i) * scale);
+            uint32_t pkt = scan.getPackets(i);
+            if (pkt > 0) {
+                y = (screenHeight - 1) - (pkt * scale);
+
+                // Serial.printf("%d,%d -> %d,%d\n", x, (screenHeight-1), x, y);
+                drawLine(x, (screenHeight - 1), x, y);
+                drawLine(x + 1, (screenHeight - 1), x + 1, y);
+            }
+
             i++;
-
-            // Serial.printf("%d,%d -> %d,%d\n", x, (screenHeight-1), x, y);
-            drawLine(x, (screenHeight-1), x, y);
-            x++;
-
-            // Serial.printf("%d,%d -> %d,%d\n", x, (screenHeight-1), x, y);
-            drawLine(x, (screenHeight-1), x, y);
-            x++;
+            x += 2;
         }
         // Serial.println("---------");
     }

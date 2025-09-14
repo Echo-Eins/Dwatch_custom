@@ -161,9 +161,13 @@ int Stations::getAP(int num) {
 }
 
 String Stations::getNameStr(int num) {
-    if (!check(num)) return String();
+    if (!check(num)) return String("unknown");
 
-    return names.find(getMac(num));
+    String name = names.find(getMac(num));
+    if (name.length() == 0) {
+        return String("unknown");
+    }
+    return name;
 }
 
 bool Stations::hasName(int num) {
