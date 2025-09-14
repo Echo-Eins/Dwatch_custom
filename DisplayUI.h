@@ -184,6 +184,7 @@ class DisplayUI {
         Menu showMenu;
         Menu attackMenu;
         Menu clockMenu;
+        Menu snifferMenu;
 
         Menu apListMenu;
         Menu stationListMenu;

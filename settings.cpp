@@ -7,7 +7,7 @@
 #include "EEPROMHelper.h" // To load and save settings_t
 #include "debug.h"
 
-#define MAGIC_NUM 3416245
+#define MAGIC_NUM 3416246
 
 extern bool writeFile(String path, String& buf);
 extern void getRandomMac(uint8_t* mac);
@@ -77,6 +77,10 @@ namespace settings {
         // Sniffer
         JSON_INT(S_JSON_CHTIME, data.sniffer.channel_time);
         JSON_INT(S_JSON_MIN_DEAUTHS, data.sniffer.min_deauth_frames);
+        JSON_FLAG(S_JSON_FILTERMGMT, data.sniffer.filter_management);
+        JSON_FLAG(S_JSON_FILTERMC, data.sniffer.filter_multicast);
+        JSON_FLAG(S_JSON_FILTERENC, data.sniffer.filter_encrypted);
+        JSON_INT(S_JSON_OUTPUT_INTERVAL, data.sniffer.output_interval);
 
         // Access Point
         JSON_VALUE(S_JSON_SSID, data.ap.ssid);
@@ -160,6 +164,10 @@ namespace settings {
 
         data.sniffer.channel_time      = CH_TIME;
         data.sniffer.min_deauth_frames = MIN_DEAUTH_FRAMES;
+        data.sniffer.filter_management = FILTER_MANAGEMENT;
+        data.sniffer.filter_multicast  = FILTER_MULTICAST;
+        data.sniffer.filter_encrypted  = FILTER_ENCRYPTED;
+        data.sniffer.output_interval   = SNIFFER_OUTPUT_INTERVAL;
 
         strncpy(data.ap.ssid, AP_SSID, 32);
         strncpy(data.ap.password, AP_PASSWD, 64);

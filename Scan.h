@@ -9,6 +9,7 @@
 #include "SSIDs.h"
 #include "language.h"
 #include "SimpleList.h"
+#include <functional>
 
 #define SCAN_MODE_OFF 0
 #define SCAN_MODE_APS 1
@@ -49,7 +50,7 @@ struct connection_info {
     uint16_t dst_port;
 };
 
-enum sniff_type { PKT_TCP, PKT_UDP, PKT_MDNS, PKT_ARP, PKT_BROADCAST };
+enum sniff_type { PKT_TCP, PKT_UDP, PKT_MDNS, PKT_ARP, PKT_BROADCAST, PKT_ENCRYPTED };
 
 struct sniff_packet {
     sniff_type type;
@@ -65,6 +66,8 @@ struct sniff_packet {
     uint8_t   tcp_flags;
     uint32_t  tcp_seq;
     uint32_t  tcp_ack;
+    uint8_t   frame_type;
+    uint16_t  len;
 };
 
 #define SNIFF_PKT_BUF_SIZE 20
@@ -114,8 +117,12 @@ class Scan {
         int sniffPacketCount();
         sniff_packet getSniffPacket(int num);
 
-        uint16_t deauths = 0;
-        uint16_t packets = 0;
+        uint16_t deauths   = 0;
+        uint16_t encrypted = 0;
+        uint16_t packets   = 0;
+
+        using stats_callback_t = std::function<void(uint16_t, uint16_t, uint16_t, uint8_t)>;
+        void onSnifferStats(stats_callback_t cb);
 
     private:
         SimpleList<uint16_t>* list;                      // packet list
@@ -139,6 +146,10 @@ class Scan {
         bool    channelHop      = true;
         uint8_t previousChannel = 1;   // channel before scan started
         uint16_t tmpDeauths     = 0;
+        uint16_t tmpEncrypted   = 0;
+
+        stats_callback_t statsCallback = nullptr;
+        void outputStats();
 
         bool apWithChannel(uint8_t ch);
         int findAccesspoint(uint8_t* mac);

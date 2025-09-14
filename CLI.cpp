@@ -706,6 +706,7 @@ void CLI::runCommand(String input) {
         // Sniffer
         else if (eqls(str, S_JSON_CHTIME)) prntln(settings::getSnifferSettings().channel_time);
         else if (eqls(str, S_JSON_MIN_DEAUTHS)) prntln(settings::getSnifferSettings().min_deauth_frames);
+        else if (eqls(str, S_JSON_OUTPUT_INTERVAL)) prntln(settings::getSnifferSettings().output_interval);
 
         // AP
         else if (eqls(str, S_JSON_SSID)) prntln(settings::getAccessPointSettings().ssid);
@@ -769,6 +770,10 @@ void CLI::runCommand(String input) {
         // Sniffer
         else if (eqls(str, S_JSON_CHTIME)) newSettings.sniffer.channel_time = unsignedVal;
         else if (eqls(str, S_JSON_MIN_DEAUTHS)) newSettings.sniffer.min_deauth_frames = unsignedVal;
+        else if (eqls(str, S_JSON_OUTPUT_INTERVAL)) newSettings.sniffer.output_interval = unsignedVal;
+        else if (eqls(str, S_JSON_FILTERMGMT)) newSettings.sniffer.filter_management = boolVal;
+        else if (eqls(str, S_JSON_FILTERMC)) newSettings.sniffer.filter_multicast = boolVal;
+        else if (eqls(str, S_JSON_FILTERENC)) newSettings.sniffer.filter_encrypted = boolVal;
 
         // AP
         else if (eqls(str, S_JSON_SSID)) strncpy(newSettings.ap.ssid, strVal.c_str(), 32);

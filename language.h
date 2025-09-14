@@ -372,6 +372,10 @@ const char D_CLOCK_DISPLAY[] PROGMEM = "CLOCK DISPLAY";
 const char D_CLOCK_SET[] PROGMEM = "SET CLOCK";
 const char D_TIMER[] PROGMEM = "STOPWATCH/TIMER";
 const char D_CALCULATOR[] PROGMEM = "CALCULATOR";
+const char D_SNIFFER_FILTERS[] PROGMEM = "SNIFFER FILTERS";
+const char D_FILTER_MGMT[] PROGMEM     = "FILTER MGMT";
+const char D_FILTER_MC[] PROGMEM       = "FILTER MC";
+const char D_FILTER_ENC[] PROGMEM      = "FILTER ENC";
 
 // SCAN MENU
 const char D_SCAN_APST[] PROGMEM = "SCAN AP + ST";
@@ -511,8 +515,8 @@ const char SC_RESTRAT[] PROGMEM = "Scan will restart in ";
 const char SC_CONTINUE[] PROGMEM = "s - type stop to disable the continuous mode";
 const char SC_RESTART[] PROGMEM = "restarting in ";
 const char SC_ERROR_MODE[] PROGMEM = "ERROR: Invalid scan mode ";
-const char SC_OUTPUT_A[] PROGMEM = "Scanning WiFi [%+2u%%]: %+3u packets/s | %+2u devices | %+2u deauths\r\n";
-const char SC_OUTPUT_B[] PROGMEM = "Scanning WiFi: %+3u packets/s | %+2u devices | %+2u deauths\r\n";
+const char SC_OUTPUT_A[] PROGMEM = "Scanning WiFi [%+2u%%]: %+3u packets/s | %+2u devices | %+2u deauths | %+2u enc\r\n";
+const char SC_OUTPUT_B[] PROGMEM = "Scanning WiFi: %+3u packets/s | %+2u devices | %+2u deauths | %+2u enc\r\n";
 const char SC_JSON_APS[] PROGMEM = "aps";
 const char SC_JSON_STATIONS[] PROGMEM = "stations";
 const char SC_JSON_NAMES[] PROGMEM = "names";
@@ -607,6 +611,10 @@ const char S_JSON_MACAP[] PROGMEM = "macAP";
 // Sniffer
 const char S_JSON_CHTIME[] PROGMEM = "chtime";
 const char S_JSON_MIN_DEAUTHS[] PROGMEM = "minDeauths";
+const char S_JSON_FILTERMGMT[] PROGMEM = "filterMgmt";
+const char S_JSON_FILTERMC[] PROGMEM   = "filterMC";
+const char S_JSON_FILTERENC[] PROGMEM  = "filterEnc";
+const char S_JSON_OUTPUT_INTERVAL[] PROGMEM = "outputInterval";
 
 // AP
 const char S_JSON_SSID[] PROGMEM = "ssid";

@@ -19,10 +19,35 @@ Scan::Scan() {
     sniffPackets = new SimpleList<sniff_packet>;
 }
 
+void Scan::onSnifferStats(stats_callback_t cb) {
+    statsCallback = cb;
+}
+
+void Scan::outputStats() {
+    uint16_t currentDeauths = deauths + tmpDeauths;
+    if (statsCallback) {
+        statsCallback(packets, stations.count(), currentDeauths,
+                      sniffTime > 0 ? getPercentage() : 0);
+    } else {
+        char s[100];
+        if (sniffTime > 0) {
+            sprintf(s, str(SC_OUTPUT_A).c_str(), getPercentage(), packets, stations.count(), currentDeauths);
+        } else {
+            sprintf(s, str(SC_OUTPUT_B).c_str(), packets, stations.count(), currentDeauths);
+        }
+        prnt(String(s));
+    }
+    snifferOutputTime = currentTime;
+}
+
 void Scan::sniffer(uint8_t* buf, uint16_t len) {
     if (!isSniffing()) return;
 
     packets++;
+
+    if (settings::getSnifferSettings().output_interval == 0) {
+        outputStats();
+    }
 
     if (len < 24) return;  // drop frames that are too short to have a valid MAC header
 
@@ -64,19 +89,24 @@ void Scan::sniffer(uint8_t* buf, uint16_t len) {
 
     if (!macTo || !macFrom) return;
 
+    const sniffer_settings_t& sniffer = settings::getSnifferSettings();
+
     if (type == 0 && (subtype == 0x0C || subtype == 0x0A)) {  // deauth or disassoc
         tmpDeauths++;
         return;
     }
 
     // drop beacon frames, probe requests and probe responses
-    if (type == 0 && (subtype == 0x08 || subtype == 0x04 || subtype == 0x05)) return;
+    if (sniffer.filter_management &&
+        type == 0 && (subtype == 0x08 || subtype == 0x04 || subtype == 0x05)) return;
 
     if (!macValid(macTo) || !macValid(macFrom)) return;
     bool toBroadcast   = macBroadcast(macTo);
     bool fromBroadcast = macBroadcast(macFrom);
-    if (!toBroadcast && macMulticast(macTo)) return;
-    if (!fromBroadcast && macMulticast(macFrom)) return;
+    if (sniffer.filter_multicast) {
+        if (!toBroadcast && macMulticast(macTo)) return;
+        if (!fromBroadcast && macMulticast(macFrom)) return;
+    }
 
     bool isBroadcast = toBroadcast || fromBroadcast;
 
@@ -85,14 +115,16 @@ void Scan::sniffer(uint8_t* buf, uint16_t len) {
     if (hasFilter && memcmp(sniffMac, macTo, 6) != 0 && memcmp(sniffMac, macFrom, 6) != 0) return;
 
     sniff_packet sp{};
-    sp.type      = PKT_BROADCAST;
-    sp.broadcast = isBroadcast;
+    sp.type       = PKT_BROADCAST;
+    sp.broadcast  = isBroadcast;
     memcpy(sp.src_mac, macFrom, 6);
     memcpy(sp.dst_mac, macTo, 6);
-    sp.ip_len    = 0;
-    sp.tcp_flags = 0;
-    sp.tcp_seq   = 0;
-    sp.tcp_ack   = 0;
+    sp.ip_len     = 0;
+    sp.tcp_flags  = 0;
+    sp.tcp_seq    = 0;
+    sp.tcp_ack    = 0;
+    sp.frame_type = type;
+    sp.len        = len;
 
     int accesspointNum = findAccesspoint(macFrom);
 
@@ -110,7 +142,13 @@ void Scan::sniffer(uint8_t* buf, uint16_t len) {
     }
 
         // parse payload for IP addresses
-    if (frameCtrl & 0x4000) return; // encrypted, skip
+    if (frameCtrl & 0x4000) {
+        sp.type = PKT_ENCRYPTED;
+        if (sniffPackets->size() >= SNIFF_PKT_BUF_SIZE) sniffPackets->shift();
+        sniffPackets->add(sp);
+        tmpEncrypted++;
+        return; // encrypted, skip further parsing
+    }
     if (type == 2) { // data frame
         int hdrLen = 24;
         uint8_t toFrom = (frameCtrl >> 8) & 0x3;
@@ -151,15 +189,21 @@ void Scan::sniffer(uint8_t* buf, uint16_t len) {
                         sp.tcp_seq   = seq;
                         sp.tcp_ack   = ack;
                         sp.tcp_flags = flags;
-                    } else if ((proto == 17) && (len >= hdrLen + 8 + ihl + 8)) { // UDP
-                        uint8_t* udp      = payload + ihl;
-                        uint16_t src_port = (udp[0] << 8) | udp[1];
-                        uint16_t dst_port = (udp[2] << 8) | udp[3];
-                        sp.type = (src_port == 5353 || dst_port == 5353) ? PKT_MDNS : PKT_UDP;
-                        sp.src_port = src_port;
-                        sp.dst_port = dst_port;
-                        }
+
+                    } else {
+                        if ((proto == 17) && (len >= hdrLen + 8 + ihl + 8)) { // UDP
+                            uint8_t* udp      = payload + ihl;
+                            uint16_t src_port = (udp[0] << 8) | udp[1];
+                            uint16_t dst_port = (udp[2] << 8) | udp[3];
+                            sp.type = (src_port == 5353 || dst_port == 5353) ? PKT_MDNS : PKT_UDP;
+                            sp.src_port = src_port;
+                            sp.dst_port = dst_port;
+                        } else {
+                            return;
+                        } // end UDP
+                    } // end TCP
                     }
+
                 } else if (ethertype == 0x0806) { // ARP
                     if (len >= hdrLen + 8 + 28) {
                         uint8_t* arp = payload;
@@ -176,6 +220,7 @@ void Scan::sniffer(uint8_t* buf, uint16_t len) {
                         sp.dst_ip = t_ip;
                 }
             }
+
         }
     }
     if (sniffPackets->size() >= SNIFF_PKT_BUF_SIZE) sniffPackets->shift();
@@ -419,21 +464,15 @@ void Scan::update() {
 
             if (list->size() > SCAN_PACKET_LIST_SIZE) list->remove(0);
             deauths    = tmpDeauths;
+            encrypted  = tmpEncrypted;
             tmpDeauths = 0;
+            tmpEncrypted = 0;
             packets    = 0;
         }
 
-        // print status every 3s
-        if (currentTime - snifferOutputTime > 3000) {
-            char s[100];
-
-            if (sniffTime > 0) {
-                sprintf(s, str(SC_OUTPUT_A).c_str(), getPercentage(), packets, stations.count(), deauths);
-            } else {
-                sprintf(s, str(SC_OUTPUT_B).c_str(), packets, stations.count(), deauths);
-            }
-            prnt(String(s));
-            snifferOutputTime = currentTime;
+        uint16_t interval = settings::getSnifferSettings().output_interval;
+        if (interval > 0 && (currentTime - snifferOutputTime > interval)) {
+            outputStats();
         }
 
         // channel hopping

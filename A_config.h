@@ -434,6 +434,22 @@
   #define MIN_DEAUTH_FRAMES 3
 #endif /* ifndef MIN_DEAUTH_FRAMES */
 
+#ifndef SNIFFER_OUTPUT_INTERVAL
+  #define SNIFFER_OUTPUT_INTERVAL 0
+#endif /* ifndef SNIFFER_OUTPUT_INTERVAL */
+
+#ifndef FILTER_MANAGEMENT
+  #define FILTER_MANAGEMENT true
+#endif /* ifndef FILTER_MANAGEMENT */
+
+#ifndef FILTER_MULTICAST
+  #define FILTER_MULTICAST true
+#endif /* ifndef FILTER_MULTICAST */
+
+#ifndef FILTER_ENCRYPTED
+  #define FILTER_ENCRYPTED true
+#endif /* ifndef FILTER_ENCRYPTED */
+
 // ===== ACCESS POINT ===== //
 #ifndef AP_SSID
   #define AP_SSID "pwned"
@@ -632,6 +648,9 @@
    // ====== SNIFFER ====== //
  #define CH_TIME 200
  #define MIN_DEAUTH_FRAMES 3
+ #define FILTER_MANAGEMENT true
+ #define FILTER_MULTICAST true
+ #define FILTER_ENCRYPTED true
 
    // ===== ACCESS POINT ===== //
  #define AP_SSID "pwned"

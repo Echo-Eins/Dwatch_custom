@@ -52,6 +52,10 @@ typedef struct wifi_settings_t {
 typedef struct sniffer_settings_t {
     uint16_t channel_time;
     uint16_t min_deauth_frames;
+    bool     filter_management;
+    bool     filter_multicast;
+    bool     filter_encrypted;
+    uint16_t output_interval;
 } sniffer_settings_t;
 
 // ===== ACCESS POINT ===== //

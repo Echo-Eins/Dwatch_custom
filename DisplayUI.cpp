@@ -114,9 +114,14 @@ void DisplayUI::setup() {
         addMenuNode(&mainMenu, D_SHOW, &showMenu);          // SHOW
         addMenuNode(&mainMenu, D_ATTACK, &attackMenu);      // ATTACK
         addMenuNode(&mainMenu, D_PACKET_MONITOR, [this]() { // PACKET MONITOR
+            scan.onSnifferStats([this](uint16_t, uint16_t, uint16_t, uint8_t) {
+                            this->draw(true);
+                        });
             scan.start(SCAN_MODE_SNIFFER, 0, SCAN_MODE_OFF, 0, false, wifi_channel);
+            drawInterval = settings::getSnifferSettings().output_interval;
             mode = DISPLAY_MODE::PACKETMONITOR;
         });
+        addMenuNode(&mainMenu, D_SNIFFER_FILTERS, &snifferMenu); // SNIFFER FILTERS
         addMenuNode(&mainMenu, D_CLOCK, &clockMenu); // CLOCK
 
         addMenuNode(&mainMenu, D_TIMER, [this]() {  // TIMER
@@ -165,6 +170,34 @@ void DisplayUI::setup() {
         addMenuNode(&scanMenu, D_SCAN_ST, [this]() { // SCAN ST
             scan.start(SCAN_MODE_STATIONS, 30000, SCAN_MODE_OFF, 0, true, wifi_channel);
             mode = DISPLAY_MODE::LOADSCAN;
+        });
+    });
+
+    // SNIFFER MENU
+    createMenu(&snifferMenu, &mainMenu, [this]() {
+        addMenuNode(&snifferMenu, [this]() {
+            const sniffer_settings_t& s = settings::getSnifferSettings();
+            return String(str(D_FILTER_MGMT)) + String(':') + (s.filter_management ? str(CLI_ON) : str(CLI_OFF));
+        }, [this]() {
+            sniffer_settings_t s = settings::getSnifferSettings();
+            s.filter_management  = !s.filter_management;
+            settings::setSnifferSettings(s);
+        });
+        addMenuNode(&snifferMenu, [this]() {
+            const sniffer_settings_t& s = settings::getSnifferSettings();
+            return String(str(D_FILTER_MC)) + String(':') + (s.filter_multicast ? str(CLI_ON) : str(CLI_OFF));
+        }, [this]() {
+            sniffer_settings_t s = settings::getSnifferSettings();
+            s.filter_multicast = !s.filter_multicast;
+            settings::setSnifferSettings(s);
+        });
+        addMenuNode(&snifferMenu, [this]() {
+            const sniffer_settings_t& s = settings::getSnifferSettings();
+            return String(str(D_FILTER_ENC)) + String(':') + (s.filter_encrypted ? str(CLI_ON) : str(CLI_OFF));
+        }, [this]() {
+            sniffer_settings_t s = settings::getSnifferSettings();
+            s.filter_encrypted = !s.filter_encrypted;
+            settings::setSnifferSettings(s);
         });
     });
 
@@ -397,9 +430,12 @@ void DisplayUI::setup() {
 
             uint8_t ch = stations.getCh(selectedID);
             setWifiChannel(ch, true);
+            scan.onSnifferStats([this](uint16_t, uint16_t, uint16_t, uint8_t) {
+                            this->draw(true);
+                        });
             scan.start(SCAN_MODE_SNIFFER, 0, SCAN_MODE_OFF, 0, false, ch);
 
-            drawInterval = 500;
+            drawInterval = settings::getSnifferSettings().output_interval;
             mode        = DISPLAY_MODE::CLIENT_SNIFF;
             sniffOffset = 0;
         });
@@ -1147,7 +1183,7 @@ void DisplayUI::drawLoadingScan() {
 void DisplayUI::drawPacketMonitor() {
     double scale = scan.getScaleFactor(screenHeight - lineHeight - 2);
 
-    String headline = leftRight(str(D_CH) + getChannel() + String(' ') + String('[') + String(scan.deauths) + String(']'), String(scan.getPacketRate()) + str(D_PKTS), maxLen);
+    String headline = leftRight(str(D_CH) + getChannel() + String(' ') + String('[') + String(scan.deauths) + String('/') + String(scan.encrypted) + String(']'), String(scan.getPacketRate()) + str(D_PKTS), maxLen);
 
     drawString(0, 0, headline);
 
@@ -1200,6 +1236,7 @@ void DisplayUI::drawClientSniff() {
             case PKT_UDP: line += "UDP "; break;
             case PKT_MDNS: line += "MDNS "; break;
             case PKT_ARP: line += "ARP "; break;
+            case PKT_ENCRYPTED: line += "ENC "; break;
             default: break;
         }
         line += ipToStr(p.src_ip);
@@ -1216,7 +1253,7 @@ void DisplayUI::drawClientSniff() {
         line += " T";
         line += String(p.ttl);
         line += " L";
-        line += String(p.ip_len);
+        line += String(p.ip_len ? p.ip_len : p.len);
         if (p.type == PKT_TCP) {
             line += " F";
             line += String(p.tcp_flags);
