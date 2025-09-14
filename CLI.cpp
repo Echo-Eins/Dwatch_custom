@@ -145,13 +145,21 @@ int CLI::toInt(String str) {
 }
 
 uint32_t CLI::getTime(String time) {
+    int len = time.length();
+    if (len == 0) return 0;
+
     int value = time.toInt();
-
     if (value < 0) value = -value;
+    if (value == 0 && time.charAt(0) != '0') return 0;
 
-    if (time.substring(time.length() - 1).equalsIgnoreCase(String(S))) value *= 1000;
-    else if (time.substring(time.length() - 3).equalsIgnoreCase(str(STR_MIN)) ||
-             (time.charAt(time.length() - 1) == M)) value *= 60000;
+    if (time.substring(len - 1).equalsIgnoreCase(String(S))) {
+        value *= 1000;
+    } else if ((len >= 3 && time.substring(len - 3).equalsIgnoreCase(str(STR_MIN))) ||
+               (time.charAt(len - 1) == M)) {
+        value *= 60000;
+    } else if (!isDigit(time.charAt(len - 1))) {
+        return 0;
+    }
     return value;
 }
 
