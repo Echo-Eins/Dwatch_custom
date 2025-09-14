@@ -1058,8 +1058,8 @@ void DisplayUI::drawMenu() {
                 int maxScroll   = max(maxScroll1, maxScroll2);
 
                 if (!scrollCompleted) {
-                    int offset1 = min(scrollCounter, maxScroll1);
-                    int offset2 = min(scrollCounter, maxScroll2);
+                    int offset1 = min(static_cast<int>(scrollCounter), maxScroll1);
+                    int offset2 = min(static_cast<int>(scrollCounter), maxScroll2);
                     line1       = line1.substring(offset1, offset1 + maxLen - 1);
                     line2       = line2.substring(offset2, offset2 + maxLen - 1);
 
