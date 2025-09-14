@@ -1050,7 +1050,6 @@ void DisplayUI::drawMenu() {
     }
 
     int y         = 0;
-    int linesUsed = 0;int y         = 0;
     int linesUsed = 0;
 
     // draw menu entries
