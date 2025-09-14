@@ -19,6 +19,22 @@ Scan::Scan() {
     sniffPackets = new SimpleList<sniff_packet>;
 }
 
+Scan::~Scan() {
+    stop();
+
+    delete list;
+    list = nullptr;
+
+    delete clients;
+    clients = nullptr;
+
+    delete connections;
+    connections = nullptr;
+
+    delete sniffPackets;
+    sniffPackets = nullptr;
+}
+
 void Scan::onSnifferStats(stats_callback_t cb) {
     statsCallback = cb;
 }

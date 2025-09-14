@@ -75,6 +75,7 @@ struct sniff_packet {
 class Scan {
     public:
         Scan();
+        ~Scan();
 
         void sniffer(uint8_t* buf, uint16_t len);
         void start(uint8_t mode, uint32_t time, uint8_t nextmode, uint32_t continueTime, bool channelHop, uint8_t channel);
