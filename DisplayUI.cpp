@@ -1190,13 +1190,13 @@ void DisplayUI::drawClientSniff() {
 
     for (int i = 0; i < lines && (sniffOffset + i) < count; i++) {
         sniff_packet p = scan.getSniffPacket(sniffOffset + i);
-        String line;
+        String line = p.broadcast ? "BC " : "";
         switch (p.type) {
-            case PKT_TCP: line = "TCP "; break;
-            case PKT_UDP: line = "UDP "; break;
-            case PKT_MDNS: line = "MDNS "; break;
-            case PKT_ARP: line = "ARP "; break;
-            default: line = "BC "; break;
+            case PKT_TCP: line += "TCP "; break;
+            case PKT_UDP: line += "UDP "; break;
+            case PKT_MDNS: line += "MDNS "; break;
+            case PKT_ARP: line += "ARP "; break;
+            default: break;
         }
         line += ipToStr(p.src_ip);
         if (p.src_port) {

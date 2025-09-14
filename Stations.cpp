@@ -1,6 +1,7 @@
 /* This software is licensed under the MIT License: https://github.com/spacehuhntech/esp8266_deauther */
 
 #include "Stations.h"
+#include "Accesspoints.h"
 
 Stations::Stations() {
     list = new SimpleList<Station>();
@@ -358,7 +359,7 @@ void Stations::internal_add(uint8_t* mac, int accesspointNum) {
     Station newStation;
 
     newStation.ap       = accesspointNum;
-    newStation.ch       = wifi_channel;
+    newStation.ch       = accesspoints.getCh(accesspointNum);
     newStation.mac      = (uint8_t*)malloc(6);
     newStation.pkts     = (uint32_t*)malloc(sizeof(uint32_t));
     newStation.time     = (uint32_t*)malloc(sizeof(uint32_t));

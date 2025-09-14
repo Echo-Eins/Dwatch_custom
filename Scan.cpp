@@ -24,11 +24,45 @@ void Scan::sniffer(uint8_t* buf, uint16_t len) {
 
     packets++;
 
-    if (len < 28) return;  // drop frames that are too short to have a valid MAC header
+    if (len < 24) return;  // drop frames that are too short to have a valid MAC header
 
     uint16_t frameCtrl = buf[0] | (buf[1] << 8);
     uint8_t type       = (frameCtrl >> 2) & 0x3;
     uint8_t subtype    = (frameCtrl >> 4) & 0xF;
+    uint8_t toFrom     = (frameCtrl >> 8) & 0x3;
+
+    // resolve addresses
+    uint8_t* addr1 = buf + 4;
+    uint8_t* addr2 = buf + 10;
+    uint8_t* addr3 = buf + 16;
+    uint8_t* addr4 = nullptr;
+    if (toFrom == 3) {
+        if (len < 30) return;  // need fourth address
+        addr4 = buf + 24;
+    }
+
+    uint8_t* macTo   = nullptr;
+    uint8_t* macFrom = nullptr;
+    switch (toFrom) {
+        case 0: // RA/TA
+            macTo   = addr1;
+            macFrom = addr2;
+            break;
+        case 1: // RA/Address3
+            macTo   = addr1;
+            macFrom = addr3;
+            break;
+        case 2: // Address3/TA
+            macTo   = addr3;
+            macFrom = addr2;
+            break;
+        case 3: // Address3/Address4
+            macTo   = addr3;
+            macFrom = addr4;
+            break;
+    }
+
+    if (!macTo || !macFrom) return;
 
     if (type == 0 && (subtype == 0x0C || subtype == 0x0A)) {  // deauth or disassoc
         tmpDeauths++;
@@ -38,28 +72,27 @@ void Scan::sniffer(uint8_t* buf, uint16_t len) {
     // drop beacon frames, probe requests and probe responses
     if (type == 0 && (subtype == 0x08 || subtype == 0x04 || subtype == 0x05)) return;
 
-    uint8_t* macTo   = &buf[16];
-    uint8_t* macFrom = &buf[22];
-
     if (!macValid(macTo) || !macValid(macFrom)) return;
     bool toBroadcast   = macBroadcast(macTo);
     bool fromBroadcast = macBroadcast(macFrom);
     if (!toBroadcast && macMulticast(macTo)) return;
     if (!fromBroadcast && macMulticast(macFrom)) return;
 
+    bool isBroadcast = toBroadcast || fromBroadcast;
+
     // filter for selected client
     bool hasFilter = !isZeroMac(sniffMac);
     if (hasFilter && memcmp(sniffMac, macTo, 6) != 0 && memcmp(sniffMac, macFrom, 6) != 0) return;
 
     sniff_packet sp{};
+    sp.type      = PKT_BROADCAST;
+    sp.broadcast = isBroadcast;
     memcpy(sp.src_mac, macFrom, 6);
     memcpy(sp.dst_mac, macTo, 6);
     sp.ip_len    = 0;
     sp.tcp_flags = 0;
     sp.tcp_seq   = 0;
     sp.tcp_ack   = 0;
-
-    if (toBroadcast || fromBroadcast) sp.type = PKT_BROADCAST;
 
     int accesspointNum = findAccesspoint(macFrom);
 
@@ -73,56 +106,55 @@ void Scan::sniffer(uint8_t* buf, uint16_t len) {
         }
     }
 
-    if (sp.type != PKT_BROADCAST) {
         // parse payload for IP addresses
-        if (frameCtrl & 0x4000) return; // encrypted, skip
-        if (type == 2) { // data frame
-            int hdrLen = 24;
-            uint8_t toFrom = (frameCtrl >> 8) & 0x3;
-            if (toFrom == 3) hdrLen = 30; // WDS
-            if (subtype & 0x08) hdrLen += 2; // QoS data
-            if (len <= hdrLen + 8) return;
-            uint8_t* llc = buf + hdrLen;
-            if (llc[0] == 0xAA && llc[1] == 0xAA && llc[2] == 0x03) {
-                uint16_t ethertype = (llc[6] << 8) | llc[7];
-                uint8_t* payload   = llc + 8;
-                if (ethertype == 0x0800) { // IPv4
-                    if (len >= hdrLen + 8 + 20) {
-                        uint8_t* iphdr = payload;
-                        uint32_t src   = (iphdr[12] << 24) | (iphdr[13] << 16) | (iphdr[14] << 8) | iphdr[15];
-                        uint32_t dst   = (iphdr[16] << 24) | (iphdr[17] << 16) | (iphdr[18] << 8) | iphdr[19];
-                        updateClient(macFrom, src);
-                        updateClient(macTo, dst);
-                        sp.src_ip = src;
-                        sp.dst_ip = dst;
-                        sp.ttl    = iphdr[8];
-                        sp.ip_len = (iphdr[2] << 8) | iphdr[3];
+    if (frameCtrl & 0x4000) return; // encrypted, skip
+    if (type == 2) { // data frame
+        int hdrLen = 24;
+        uint8_t toFrom = (frameCtrl >> 8) & 0x3;
+        if (toFrom == 3) hdrLen = 30; // WDS
+        if (subtype & 0x08) hdrLen += 2; // QoS data
+        if (len <= hdrLen + 8) return;
+        uint8_t* llc = buf + hdrLen;
+        if (llc[0] == 0xAA && llc[1] == 0xAA && llc[2] == 0x03) {
+            uint16_t ethertype = (llc[6] << 8) | llc[7];
+            uint8_t* payload   = llc + 8;
+            if (ethertype == 0x0800) { // IPv4
+                if (len >= hdrLen + 8 + 20) {
+                    uint8_t* iphdr = payload;
+                    uint32_t src   = (iphdr[12] << 24) | (iphdr[13] << 16) | (iphdr[14] << 8) | iphdr[15];
+                    uint32_t dst   = (iphdr[16] << 24) | (iphdr[17] << 16) | (iphdr[18] << 8) | iphdr[19];
+                    updateClient(macFrom, src);
+                    updateClient(macTo, dst);
+                    sp.src_ip = src;
+                    sp.dst_ip = dst;
+                    sp.ttl    = iphdr[8];
+                    sp.ip_len = (iphdr[2] << 8) | iphdr[3];
 
-                        uint8_t proto = iphdr[9];
-                        uint8_t ihl   = (iphdr[0] & 0x0F) * 4;
-                        if ((proto == 6) && (len >= hdrLen + 8 + ihl + 20)) { // TCP
-                            uint8_t* tcp      = payload + ihl;
-                            uint16_t src_port = (tcp[0] << 8) | tcp[1];
-                            uint16_t dst_port = (tcp[2] << 8) | tcp[3];
-                            uint32_t seq      = (tcp[4] << 24) | (tcp[5] << 16) | (tcp[6] << 8) | tcp[7];
-                            uint32_t ack      = (tcp[8] << 24) | (tcp[9] << 16) | (tcp[10] << 8) | tcp[11];
-                            uint8_t flags     = tcp[13];
+                    uint8_t proto = iphdr[9];
+                    uint8_t ihl   = (iphdr[0] & 0x0F) * 4;
+                    if ((proto == 6) && (len >= hdrLen + 8 + ihl + 20)) { // TCP
+                        uint8_t* tcp      = payload + ihl;
+                        uint16_t src_port = (tcp[0] << 8) | tcp[1];
+                        uint16_t dst_port = (tcp[2] << 8) | tcp[3];
+                        uint32_t seq      = (tcp[4] << 24) | (tcp[5] << 16) | (tcp[6] << 8) | tcp[7];
+                        uint32_t ack      = (tcp[8] << 24) | (tcp[9] << 16) | (tcp[10] << 8) | tcp[11];
+                        uint8_t flags     = tcp[13];
 
-                            updateConnection(src, dst, src_port, dst_port, seq, macFrom, macTo);
+                        updateConnection(src, dst, src_port, dst_port, seq, macFrom, macTo);
 
-                            sp.type      = PKT_TCP;
-                            sp.src_port  = src_port;
-                            sp.dst_port  = dst_port;
-                            sp.tcp_seq   = seq;
-                            sp.tcp_ack   = ack;
-                            sp.tcp_flags = flags;
-                        } else if ((proto == 17) && (len >= hdrLen + 8 + ihl + 8)) { // UDP
-                            uint8_t* udp      = payload + ihl;
-                            uint16_t src_port = (udp[0] << 8) | udp[1];
-                            uint16_t dst_port = (udp[2] << 8) | udp[3];
-                            sp.type = (src_port == 5353 || dst_port == 5353) ? PKT_MDNS : PKT_UDP;
-                            sp.src_port = src_port;
-                            sp.dst_port = dst_port;
+                        sp.type      = PKT_TCP;
+                        sp.src_port  = src_port;
+                        sp.dst_port  = dst_port;
+                        sp.tcp_seq   = seq;
+                        sp.tcp_ack   = ack;
+                        sp.tcp_flags = flags;
+                    } else if ((proto == 17) && (len >= hdrLen + 8 + ihl + 8)) { // UDP
+                        uint8_t* udp      = payload + ihl;
+                        uint16_t src_port = (udp[0] << 8) | udp[1];
+                        uint16_t dst_port = (udp[2] << 8) | udp[3];
+                        sp.type = (src_port == 5353 || dst_port == 5353) ? PKT_MDNS : PKT_UDP;
+                        sp.src_port = src_port;
+                        sp.dst_port = dst_port;
                         }
                     }
                 } else if (ethertype == 0x0806) { // ARP
@@ -136,10 +168,9 @@ void Scan::sniffer(uint8_t* buf, uint16_t len) {
                         uint32_t t_ip = (tip[0] << 24) | (tip[1] << 16) | (tip[2] << 8) | tip[3];
                         updateClient(smac, s_ip);
                         updateClient(tmac, t_ip);
-                        sp.type = PKT_ARP;
+                        sp.type   = PKT_ARP;
                         sp.src_ip = s_ip;
                         sp.dst_ip = t_ip;
-                    }
                 }
             }
         }
@@ -249,7 +280,7 @@ int Scan::sniffPacketCount() {
 
 sniff_packet Scan::getSniffPacket(int num) {
     if (!sniffPackets || num < 0 || num >= sniffPackets->size()) {
-        sniff_packet empty = {PKT_BROADCAST};
+        sniff_packet empty = {PKT_BROADCAST, false};
         memset(empty.src_mac, 0, 6);
         memset(empty.dst_mac, 0, 6);
         empty.src_ip   = empty.dst_ip = 0;
