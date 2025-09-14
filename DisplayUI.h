@@ -10,6 +10,7 @@
 #include "Attack.h"
 #include "Timer.h"
 #include "Calculator.h"
+#include "SimpleList.h"
 
 // ===== adjustable ===== //
 #if defined(SSD1306_I2C)
@@ -176,6 +177,7 @@ class DisplayUI {
         uint8_t calcCol = 0;
 
         // menus
+        SimpleList<Menu*> menus;
         Menu* currentMenu;
 
         Menu mainMenu;

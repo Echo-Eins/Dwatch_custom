@@ -87,7 +87,26 @@ void DisplayUI::drawLine(int x1, int y1, int x2, int y2) {
 
 DisplayUI::DisplayUI() {}
 
-DisplayUI::~DisplayUI() {}
+DisplayUI::~DisplayUI() {
+    delete up;
+    delete down;
+    delete a;
+    delete b;
+    up = nullptr;
+    down = nullptr;
+    a = nullptr;
+    b = nullptr;
+
+    for (int i = 0; i < menus.size(); i++) {
+        Menu* m = menus.get(i);
+        if (m && m->list) {
+            delete m->list;
+            m->list = nullptr;
+        }
+    }
+    menus.clear();
+    currentMenu = nullptr;
+}
 
 
 void DisplayUI::setup() {
@@ -1389,6 +1408,7 @@ void DisplayUI::createMenu(Menu* menu, Menu* parent, std::function<void()>build)
     menu->parentMenu = parent;
     menu->selected   = 0;
     menu->build      = build;
+    menus.add(menu);
 }
 
 void DisplayUI::addMenuNode(Menu* menu, std::function<String()>getStr, std::function<void()>click,
