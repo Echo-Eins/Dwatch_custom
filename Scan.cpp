@@ -301,6 +301,7 @@ void Scan::start(uint8_t mode) {
 
 void Scan::start(uint8_t mode, uint32_t time, uint8_t nextmode, uint32_t continueTime, bool channelHop,
                  uint8_t channel) {
+    if ((mode != SCAN_MODE_OFF) && channelHop && (scanMode == SCAN_MODE_OFF)) previousChannel = wifi_channel;
     if (mode != SCAN_MODE_OFF) stop();
 
     setWifiChannel(channel, true);
@@ -374,6 +375,7 @@ void Scan::start(uint8_t mode, uint32_t time, uint8_t nextmode, uint32_t continu
     /* Stop scan */
     else if (mode == SCAN_MODE_OFF) {
         wifi_promiscuous_enable(false);
+        setWifiChannel(previousChannel, true);
 
         if (settings::getWebSettings().enabled) wifi::resumeAP();
         prntln(SC_STOPPED);

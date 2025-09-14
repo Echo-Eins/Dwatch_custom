@@ -136,8 +136,9 @@ class Scan {
         uint32_t continueTime      = SCAN_DEFAULT_CONTINUE_TIME; // time in ms to wait until scan restarts
         uint32_t continueStartTime = 0;                          // when scan restarted
 
-        bool channelHop     = true;
-        uint16_t tmpDeauths = 0;
+        bool    channelHop      = true;
+        uint8_t previousChannel = 1;   // channel before scan started
+        uint16_t tmpDeauths     = 0;
 
         bool apWithChannel(uint8_t ch);
         int findAccesspoint(uint8_t* mac);
