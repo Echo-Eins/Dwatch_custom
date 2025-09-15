@@ -1,5 +1,10 @@
 #include "logger.h"
+
+#if defined(ESP8266)
+#include <SDFS.h>
+#else
 #include <SD.h>
+#endif
 #include <SPI.h>
 
 static uint32_t getFreeMem() {

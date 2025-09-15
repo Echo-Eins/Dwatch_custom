@@ -2,7 +2,14 @@
 #define LOGGER_H
 
 #include <Arduino.h>
+
+#if defined(ESP8266) || defined(ESP32)
 #include <FS.h>
+using LoggerFile = fs::File;
+#else
+#include <SD.h>
+using LoggerFile = File;
+#endif
 
 class LoggerClass {
 public:
@@ -14,7 +21,7 @@ public:
 
 private:
     bool sdAvailable = false;
-    File logFile;
+    LoggerFile logFile;
     char fileName[32];
 };
 
