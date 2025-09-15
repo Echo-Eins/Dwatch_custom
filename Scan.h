@@ -140,8 +140,9 @@ class Scan {
         SimpleList<connection_info>* connections;        // tracked TCP connections
         sniff_packet sniffPackets[SNIFF_PKT_BUF_SIZE];    // captured packets ring buffer
         SimpleList<station_update>* stationQueue;        // pending station updates
-        int sniffPacketHead = 0;                          // next insert index
-        int sniffPacketCnt  = 0;                          // number of stored packets
+        volatile int sniffPacketHead = 0;                 // next insert index
+        volatile int sniffPacketCnt  = 0;                 // number of stored packets
+        // TODO: consider replacing with lock-free ring buffer and atomic counters
         uint8_t sniffMac[6] = {0};
 
         uint32_t sniffTime          = SCAN_DEFAULT_TIME; // how long the scan runs

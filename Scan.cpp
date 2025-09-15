@@ -138,10 +138,12 @@ void Scan::sniffer(uint8_t* buf, uint16_t len) {
     memcpy(su.mac_to, macTo, 6);
     su.to_broadcast   = toBroadcast;
     su.from_broadcast = fromBroadcast;
+	noInterrupts();
     if (stationQueue->size() >= STATION_UPDATE_BUF_SIZE) {
         stationQueue->removeFirst();
     }
     stationQueue->add(su);
+	interrupts();
 
     sniff_packet sp{};
     sp.type       = PKT_UNKNOWN;
@@ -304,9 +306,17 @@ void Scan::updateConnection(uint32_t src_ip, uint32_t dst_ip, uint16_t src_port,
 }
 
 void Scan::processStationUpdates() {
-    while (stationQueue && stationQueue->size() > 0) {
-        station_update su = stationQueue->get(0);
-        stationQueue->removeFirst();
+    while (true) {
+        station_update su;
+        bool hasUpdate = false;
+        noInterrupts();
+        if (stationQueue && stationQueue->size() > 0) {
+            su = stationQueue->get(0);
+            stationQueue->removeFirst();
+            hasUpdate = true;
+        }
+        interrupts();
+        if (!hasUpdate) break;
 
         int accesspointNum = findAccesspoint(su.mac_from);
         if (accesspointNum >= 0) {
@@ -372,7 +382,10 @@ int Scan::sniffPacketCount() {
 }
 
 sniff_packet Scan::getSniffPacket(int num) {
-    if (num < 0 || num >= sniffPacketCnt) {
+    noInterrupts();
+    int cnt = sniffPacketCnt;
+    if (num < 0 || num >= cnt) {
+        interrupts();
         sniff_packet empty = {PKT_UNKNOWN, false};
         memset(empty.src_mac, 0, 6);
         memset(empty.dst_mac, 0, 6);
@@ -385,8 +398,11 @@ sniff_packet Scan::getSniffPacket(int num) {
         empty.tcp_ack   = 0;
         return empty;
     }
-    int idx = (sniffPacketHead - sniffPacketCnt + num + SNIFF_PKT_BUF_SIZE) % SNIFF_PKT_BUF_SIZE;
-    return sniffPackets[idx];
+    int head = sniffPacketHead;
+    int idx = (head - cnt + num + SNIFF_PKT_BUF_SIZE) % SNIFF_PKT_BUF_SIZE;
+    sniff_packet pkt = sniffPackets[idx];
+    interrupts();
+    return pkt;
 }
 
 void Scan::start(uint8_t mode) {

@@ -6,6 +6,8 @@
 #include "settings.h"
 #include "wifi.h"
 
+// maximum allowed length for a single line in a script
+static const size_t CLI_MAX_LINE_LEN = 256;
 /*
    Shitty code used less resources so I will keep this clusterfuck as it is,
    but if you're interested I made a library for this: github.com/spacehuhn/SimpleCLI
@@ -90,32 +92,50 @@ void CLI::exec(String input) {
 }
 
 void CLI::execFile(String path) {
-    String input;
+    // ensure path starts with '/'
+    if (path.charAt(0) != SLASH) path = String(SLASH) + path;
 
-    if (readFile(path, input)) {
-        String tmpLine;
-        char   tmpChar;
+    File f = LittleFS.open(path, "r");
+    if (!f) return;
 
-        input += '\n';
+        // store existing queue entries
+    SimpleList<String>* oldQueue = new SimpleList<String>;
+    while (!queue->isEmpty()) {
+        oldQueue->add(queue->shift());
+    }
 
-        while (!queue->isEmpty()) {
-            input += queue->shift();
-            input += '\n';
-        }
+        String line;
+    char   c;
 
-        for (int i = 0; i < input.length(); i++) {
-            tmpChar = input.charAt(i);
+    while (f.available()) {
+        c = f.read();
 
-            if (tmpChar == '\n') {
-                queue->add(tmpLine);
-                tmpLine = String();
+        if (c == '\r') continue; // skip carriage returns
+
+            if (c == '\n') {
+            queue->add(line);
+            line = String(); // free buffer
+        } else {
+            if (line.length() >= CLI_MAX_LINE_LEN) {
+                error("Line too long");
+                // skip remaining characters until end of line
+                while (f.available() && f.read() != '\n') {}
+                line = String();
             } else {
-                tmpLine += tmpChar;
+                line += c;
             }
         }
+	}
 
-        queue->add(tmpLine);
+    if (line.length() > 0) queue->add(line);
+
+    f.close();
+
+        // append old queue content
+    while (!oldQueue->isEmpty()) {
+        queue->add(oldQueue->shift());
     }
+	delete oldQueue;
 }
 
 void CLI::error(String message) {
