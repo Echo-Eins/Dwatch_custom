@@ -19,6 +19,7 @@ extern "C" {
 #include "CLI.h"
 #include "Attack.h"
 #include "Scan.h"
+#include "logger.h"
 
 extern bool progmemToSpiffs(const char* adr, int len, String path);
 
@@ -212,6 +213,7 @@ namespace wifi {
         // Set mac address
         wifi_set_macaddr(STATION_IF, (uint8_t*)settings::getWifiSettings().mac_st);
         wifi_set_macaddr(SOFTAP_IF, (uint8_t*)settings::getWifiSettings().mac_ap);
+		Logger.log("WiFi: begin");
     }
 
     String getMode() {
@@ -436,6 +438,7 @@ namespace wifi {
 
         prntln(W_STARTED_AP);
         printStatus();
+		Logger.log("WiFi: AP started");
     }
 
     void stopAP() {
@@ -446,6 +449,7 @@ namespace wifi {
             wifi_set_opmode(STATION_MODE);
             prntln(W_STOPPED_AP);
             mode = wifi_mode_t::st;
+			Logger.log("WiFi: AP stopped");
         }
     }
 
@@ -456,6 +460,7 @@ namespace wifi {
             WiFi.softAPConfig(ip, ip, netmask);
             WiFi.softAP(ap_settings.ssid, ap_settings.password, ap_settings.channel, ap_settings.hidden);
             prntln(W_STARTED_AP);
+			Logger.log("WiFi: AP resumed");
         }
     }
 

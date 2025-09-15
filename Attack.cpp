@@ -1,7 +1,7 @@
 
 
 #include "Attack.h"
-
+#include "logger.h"
 #include "settings.h"
 
 Attack::Attack() {
@@ -30,6 +30,7 @@ void Attack::start() {
     accesspoints.sortAfterChannel();
     stations.sortAfterChannel();
     running = true;
+	Logger.log("System: attack start");
 }
 
 void Attack::start(bool beacon, bool deauth, bool deauthAll, bool probe, bool output, uint32_t timeout) {
@@ -73,6 +74,8 @@ void Attack::stop() {
         beacon.active        = false;
         probe.active         = false;
         prntln(A_STOP);
+		Logger.log("System: attack stop");
+        Logger.flush();
     }
 }
 
@@ -84,6 +87,7 @@ void Attack::updateCounter() {
     // stop when timeout is active and time is up
     if ((timeout > 0) && (currentTime - attackStartTime >= timeout)) {
         prntln(A_TIMEOUT);
+		Logger.log("Attack: timeout");
         stop();
         return;
     }

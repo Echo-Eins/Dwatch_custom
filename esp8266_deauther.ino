@@ -36,6 +36,7 @@ extern "C" {
 
 #include "led.h"
 #include <Ticker.h>
+#include "logger.h"
 
 // Run-Time Variables //
 Names names;
@@ -73,15 +74,19 @@ void setup() {
     // start serial
     Serial.begin(115200);
     Serial.println();
+	Logger.begin();
+    Logger.log("Boot: setup start");
 
     // start SPIFFS
     prnt(SETUP_MOUNT_SPIFFS);
     // bool spiffsError = !LittleFS.begin();
     LittleFS.begin();
     prntln(/*spiffsError ? SETUP_ERROR : */ SETUP_OK);
+	Logger.log("Boot: SPIFFS mounted");
 
     // Start EEPROM
     EEPROMHelper::begin(EEPROM_SIZE);
+	Logger.log("Boot: EEPROM init");
 
 #ifdef FORMAT_SPIFFS
     prnt(SETUP_FORMAT_SPIFFS);
@@ -114,12 +119,14 @@ void setup() {
     // load settings
     #ifndef RESET_SETTINGS
     settings::load();
+	Logger.log("Boot: settings loaded");
     #else // ifndef RESET_SETTINGS
     settings::reset();
     settings::save();
     #endif // ifndef RESET_SETTINGS
 
     wifi::begin();
+	Logger.log("Boot: WiFi init");
     wifi_set_promiscuous_rx_cb([](uint8_t* buf, uint16_t len) {
         scan.sniffer(buf, len);
     });
@@ -128,6 +135,7 @@ void setup() {
     if (settings::getDisplaySettings().enabled) {
         displayUI.setup();
         displayUI.mode = DISPLAY_MODE::INTRO;
+		Logger.log("Boot: display setup");
     }
 
     // schedule loading of larger resources
@@ -135,14 +143,17 @@ void setup() {
 
     // create scan.json
     scan.setup();
+	Logger.log("Boot: scan setup");
 
     // dis/enable serial command interface
     if (settings::getCLISettings().enabled) {
         cli.enable();
+		Logger.log("Boot: CLI enabled");
     } else {
         prntln(SETUP_SERIAL_WARNING);
         Serial.flush();
         Serial.end();
+		Logger.log("Boot: CLI disabled");
     }
 
     // start access point/web interface
@@ -150,6 +161,7 @@ void setup() {
 
     // STARTED
     prntln(SETUP_STARTED);
+	Logger.log("Boot: setup finished");
 
     // version
     prntln(DEAUTHER_VERSION);
@@ -185,6 +197,7 @@ void deferredLoad() {
 
 void loop() {
     currentTime = millis();
+	Logger.flush();
 
     if (loadRequested) {
         loadRequested = false;
@@ -218,6 +231,7 @@ void loop() {
 
     resetButton->update();
     if (resetButton->holding(5000)) {
+		Logger.log("User: reset button hold");
         led::setMode(LED_MODE::SCAN);
         DISPLAY_MODE _mode = displayUI.mode;
         displayUI.mode = DISPLAY_MODE::RESETTING;

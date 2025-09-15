@@ -5,6 +5,7 @@
 #include "settings.h"
 #include "wifi.h"
 #include "debug.h"
+#include "logger.h"
 
 bool isZeroMac(const uint8_t* mac) {
     for (uint8_t i = 0; i < 6; i++)
@@ -423,6 +424,7 @@ void Scan::start(uint8_t mode, uint32_t time, uint8_t nextmode, uint32_t continu
     Scan::channelHop         = channelHop;
     Scan::scanMode           = mode;
     Scan::scan_continue_mode = nextmode;
+	Logger.log("System: scan start");
 
     if ((sniffTime > 0) && (sniffTime < 1000)) sniffTime = 1000;
 
@@ -492,6 +494,8 @@ void Scan::start(uint8_t mode, uint32_t time, uint8_t nextmode, uint32_t continu
         if (settings::getWebSettings().enabled) wifi::resumeAP();
         prntln(SC_STOPPED);
         save(true);
+		Logger.log("System: scan stop");
+        Logger.flush();
 
         if (scan_continue_mode != SCAN_MODE_OFF) {
             prnt(SC_RESTART);

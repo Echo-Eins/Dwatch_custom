@@ -5,6 +5,7 @@
 #include <LittleFS.h>
 #include "settings.h"
 #include "wifi.h"
+#include "logger.h"
 
 // maximum allowed length for a single line in a script
 static const size_t CLI_MAX_LINE_LEN = 256;
@@ -632,6 +633,9 @@ void CLI::runCommand(String input) {
                         }
                         prntln();
                     }
+					Logger.log("Shutdown");
+                    Logger.flush();
+                    Logger.end();
                     ESP.reset();
                 } else if ((i / 10) % 10 == 0) {
                     prnt(CLI_RICE_MEM);
@@ -943,7 +947,10 @@ void CLI::runCommand(String input) {
 
     // ===== REBOOT ===== //
     // reboot
-    else if (eqlsCMD(0, CLI_REBOOT)) {
+    else if (eqlsCMD(0, CLI_REBOOT)) {\
+		Logger.log("Shutdown");
+        Logger.flush();
+        Logger.end();
         ESP.reset();
     }
 
