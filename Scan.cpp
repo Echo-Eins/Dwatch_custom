@@ -4,6 +4,7 @@
 
 #include "settings.h"
 #include "wifi.h"
+#include "debug.h"
 
 bool isZeroMac(const uint8_t* mac) {
     for (uint8_t i = 0; i < 6; i++)
@@ -122,8 +123,8 @@ void Scan::sniffer(uint8_t* buf, uint16_t len) {
     bool toBroadcast   = macBroadcast(macTo);
     bool fromBroadcast = macBroadcast(macFrom);
     if (sniffer.filter_multicast) {
-        if (!toBroadcast && macMulticast(macTo)) return;
-        if (!fromBroadcast && macMulticast(macFrom)) return;
+        if (!toBroadcast && macMulticast(macTo) && !macMulticastAllowed(macTo)) return;
+        if (!fromBroadcast && macMulticast(macFrom) && !macMulticastAllowed(macFrom)) return;
     }
 
     bool isBroadcast = toBroadcast || fromBroadcast;
@@ -143,7 +144,7 @@ void Scan::sniffer(uint8_t* buf, uint16_t len) {
     stationQueue->add(su);
 
     sniff_packet sp{};
-    sp.type       = PKT_BROADCAST;
+    sp.type       = PKT_UNKNOWN;
     sp.broadcast  = isBroadcast;
     memcpy(sp.src_mac, macFrom, 6);
     memcpy(sp.dst_mac, macTo, 6);
@@ -209,9 +210,13 @@ void Scan::sniffer(uint8_t* buf, uint16_t len) {
                             uint8_t* udp      = payload + ihl;
                             uint16_t src_port = (udp[0] << 8) | udp[1];
                             uint16_t dst_port = (udp[2] << 8) | udp[3];
-                            sp.type = (src_port == 5353 || dst_port == 5353) ? PKT_MDNS : PKT_UDP;
+                            bool mdns         = (src_port == 5353) || (dst_port == 5353);
+                            sp.type     = mdns ? PKT_MDNS : PKT_UDP;
                             sp.src_port = src_port;
                             sp.dst_port = dst_port;
+							if (mdns) {
+                                debuglnF("[Scan] mDNS packet received");
+                            }
                         } else {
                             return;
                         } // end UDP
@@ -368,7 +373,7 @@ int Scan::sniffPacketCount() {
 
 sniff_packet Scan::getSniffPacket(int num) {
     if (num < 0 || num >= sniffPacketCnt) {
-        sniff_packet empty = {PKT_BROADCAST, false};
+        sniff_packet empty = {PKT_UNKNOWN, false};
         memset(empty.src_mac, 0, 6);
         memset(empty.dst_mac, 0, 6);
         empty.src_ip   = empty.dst_ip = 0;

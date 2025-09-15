@@ -50,7 +50,7 @@ struct connection_info {
     uint16_t dst_port;
 };
 
-enum sniff_type { PKT_TCP, PKT_UDP, PKT_MDNS, PKT_ARP, PKT_BROADCAST, PKT_ENCRYPTED };
+enum sniff_type { PKT_UNKNOWN, PKT_TCP, PKT_UDP, PKT_MDNS, PKT_ARP, PKT_ENCRYPTED };
 
 struct sniff_packet {
     sniff_type type;

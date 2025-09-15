@@ -366,6 +366,18 @@ bool macMulticast(uint8_t* mac) {
     return false;
 }
 
+bool macMulticastAllowed(uint8_t* mac) {
+    static const uint8_t allowed[][3] = {
+        {0x01, 0x00, 0x5E}, // IPv4 multicast (e.g. mDNS)
+    };
+
+    for (uint8_t i = 0; i < sizeof(allowed) / sizeof(allowed[0]); i++) {
+        if ((mac[0] == allowed[i][0]) && (mac[1] == allowed[i][1]) && (mac[2] == allowed[i][2])) return true;
+    }
+
+    return false;
+}
+
 /* ===== VENDOR LIST (oui.h) ===== */
 void getRandomMac(uint8_t* mac) {
     int num = random(sizeof(data_vendors) / 11 - 1);

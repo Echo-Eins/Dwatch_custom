@@ -21,6 +21,7 @@ extern uint32_t currentTime;
 
 extern String searchVendor(uint8_t* mac);
 extern bool macMulticast(uint8_t* mac);
+extern bool macMulticastAllowed(uint8_t* mac);
 extern bool macValid(uint8_t* mac);
 extern bool macBroadcast(uint8_t* mac);
 extern String bytesToStr(const uint8_t* b, uint32_t size);

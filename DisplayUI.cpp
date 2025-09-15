@@ -1275,6 +1275,7 @@ void DisplayUI::drawClientSniff() {
         sniff_packet p = scan.getSniffPacket(sniffOffset + i);
         String line = p.broadcast ? "BC " : "";
         switch (p.type) {
+			case PKT_UNKNOWN: line += "UNK"; break;
             case PKT_TCP: line += "TCP "; break;
             case PKT_UDP: line += "UDP "; break;
             case PKT_MDNS: line += "MDNS "; break;
