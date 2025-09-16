@@ -22,7 +22,7 @@ public:
 private:
     bool sdAvailable = false;
     LoggerFile logFile;
-    char fileName[32];
+    char fileName[32] = {0};
 };
 
 extern LoggerClass Logger;

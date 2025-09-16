@@ -29,6 +29,12 @@ extern String bytesToStr(const uint8_t* b, uint32_t size);
 class Stations {
     public:
         Stations();
+        ~Stations();
+
+        Stations(const Stations&) = delete;
+        Stations& operator=(const Stations&) = delete;
+        Stations(Stations&&) = delete;
+        Stations& operator=(Stations&&) = delete;
 
         void sort();
         void sortAfterChannel();

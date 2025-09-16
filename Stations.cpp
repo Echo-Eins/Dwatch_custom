@@ -7,6 +7,14 @@ Stations::Stations() {
     list = new SimpleList<Station>();
 }
 
+Stations::~Stations() {
+    if (list) {
+        internal_removeAll();
+        delete list;
+        list = nullptr;
+    }
+}
+
 void Stations::add(uint8_t* mac, int accesspointNum) {
     int stationNum = findStation(mac);
 

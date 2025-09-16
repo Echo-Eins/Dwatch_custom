@@ -9,6 +9,14 @@ SSIDs::SSIDs() {
     list = new SimpleList<SSID>;
 }
 
+SSIDs::~SSIDs() {
+    if (list) {
+        internal_removeAll();
+        delete list;
+        list = nullptr;
+    }
+}
+
 void SSIDs::load() {
     internal_removeAll();
     DynamicJsonBuffer jsonBuffer(4000);

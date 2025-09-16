@@ -113,7 +113,7 @@ namespace settings {
         debugF("Loading settings...");
 
         // read data from eeproms
-        settings_t newData;
+        settings_t newData{};
 
         EEPROMHelper::getObject(SETTINGS_ADDR, newData);
 

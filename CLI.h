@@ -46,6 +46,11 @@ class CLI {
         CLI();
         ~CLI(); // destructor cleans up allocated lists
 
+		CLI(const CLI&) = delete;
+        CLI& operator=(const CLI&) = delete;
+        CLI(CLI&&) = delete;
+        CLI& operator=(CLI&&) = delete;
+
         void load();
         void load(String filepath);
 

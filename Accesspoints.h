@@ -26,6 +26,12 @@ struct AP {
 class Accesspoints {
     public:
         Accesspoints();
+		~Accesspoints();
+
+        Accesspoints(const Accesspoints&) = delete;
+        Accesspoints& operator=(const Accesspoints&) = delete;
+        Accesspoints(Accesspoints&&) = delete;
+        Accesspoints& operator=(Accesspoints&&) = delete;
 
         void sort();
         void sortAfterChannel();

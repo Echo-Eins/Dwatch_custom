@@ -6,6 +6,8 @@
 #include "wifi.h"
 #include "debug.h"
 #include "logger.h"
+#include <algorithm>
+#include <iterator>
 
 bool isZeroMac(const uint8_t* mac) {
     for (uint8_t i = 0; i < 6; i++)
@@ -15,10 +17,11 @@ bool isZeroMac(const uint8_t* mac) {
 }
 
 Scan::Scan() {
-    list    = new SimpleList<uint16_t>;
-    clients = new SimpleList<client_info>;
-    connections = new SimpleList<connection_info>;
+    list         = new SimpleList<uint16_t>;
+    clients      = new SimpleList<client_info>;
+    connections  = new SimpleList<connection_info>;
     stationQueue = new SimpleList<station_update>;
+    std::fill(std::begin(sniffPackets), std::end(sniffPackets), sniff_packet{});
 }
 
 

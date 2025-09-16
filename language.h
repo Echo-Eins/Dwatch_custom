@@ -3,6 +3,16 @@
 #pragma once
 
 #include "Arduino.h"
+#else
+#include <stdint.h>
+class String;
+#ifndef PROGMEM
+#define PROGMEM
+#endif
+#ifndef FPSTR
+#define FPSTR(x) (x)
+#endif
+#endif
 
 extern String str(const char* ptr);
 extern String keyword(const char* keywordPtr);

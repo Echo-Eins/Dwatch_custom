@@ -30,6 +30,12 @@ extern String escape(String str);
 class SSIDs {
     public:
         SSIDs();
+        ~SSIDs();
+
+        SSIDs(const SSIDs&) = delete;
+        SSIDs& operator=(const SSIDs&) = delete;
+        SSIDs(SSIDs&&) = delete;
+        SSIDs& operator=(SSIDs&&) = delete;
 
         void load();
         void load(String filepath);

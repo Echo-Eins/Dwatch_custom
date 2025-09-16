@@ -8,6 +8,14 @@ Names::Names() {
     list = new SimpleList<Device>;
 }
 
+Names::~Names() {
+    if (list) {
+        internal_removeAll();
+        delete list;
+        list = nullptr;
+    }
+}
+
 void Names::load() {
     internal_removeAll();
 

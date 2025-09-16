@@ -85,6 +85,10 @@ class Scan {
     public:
         Scan();
         ~Scan();
+        Scan(const Scan&) = delete;
+        Scan& operator=(const Scan&) = delete;
+        Scan(Scan&&) = delete;
+        Scan& operator=(Scan&&) = delete;
 
         void sniffer(uint8_t* buf, uint16_t len);
         void start(uint8_t mode, uint32_t time, uint8_t nextmode, uint32_t continueTime, bool channelHop, uint8_t channel);

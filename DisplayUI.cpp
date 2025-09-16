@@ -89,7 +89,31 @@ void DisplayUI::drawLine(int x1, int y1, int x2, int y2) {
 // ====================== //
 
 
-DisplayUI::DisplayUI() {}
+DisplayUI::DisplayUI() : currentMenu(nullptr) {
+    auto resetMenu = [](Menu& menu) {
+        menu.list       = nullptr;
+        menu.parentMenu = nullptr;
+        menu.selected   = 0;
+        menu.build      = nullptr;
+    };
+
+    resetMenu(mainMenu);
+    resetMenu(scanMenu);
+    resetMenu(showMenu);
+    resetMenu(attackMenu);
+    resetMenu(clockMenu);
+    resetMenu(snifferMenu);
+    resetMenu(apListMenu);
+    resetMenu(stationListMenu);
+    resetMenu(nameListMenu);
+    resetMenu(ssidListMenu);
+    resetMenu(apMenu);
+    resetMenu(stationMenu);
+    resetMenu(nameMenu);
+    resetMenu(ssidMenu);
+    resetMenu(rstNetMenu);
+    resetMenu(rstClientMenu);
+}
 
 DisplayUI::~DisplayUI() {
     delete up;
@@ -735,7 +759,7 @@ void DisplayUI::update(bool force) {
             display.setTextAlignment(TEXT_ALIGN_LEFT);
             strobeLED    = false;
             highlightLED = false;
-#fdef HIGHLIGHT_LED
+#ifdef HIGHLIGHT_LED
             digitalWrite(HIGHLIGHT_LED, highlightLED);
 #endif // HIGHLIGHT_LED
             return;

@@ -27,6 +27,12 @@ extern String bytesToStr(const uint8_t* b, uint32_t size);
 class Names {
     public:
         Names();
+		~Names();
+
+        Names(const Names&) = delete;
+        Names& operator=(const Names&) = delete;
+        Names(Names&&) = delete;
+        Names& operator=(Names&&) = delete;
 
         void load();
         void load(String filepath);

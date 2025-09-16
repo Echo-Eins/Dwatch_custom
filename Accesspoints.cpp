@@ -6,6 +6,13 @@ Accesspoints::Accesspoints() {
     list = new SimpleList<AP>;
 }
 
+Accesspoints::~Accesspoints() {
+    if (list) {
+        delete list;
+        list = nullptr;
+    }
+}
+
 void Accesspoints::sort() {
     list->setCompare([](AP& a, AP& b) -> int {
         if (WiFi.RSSI(a.id) > WiFi.RSSI(b.id)) return -1;
