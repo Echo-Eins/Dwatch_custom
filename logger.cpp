@@ -6,6 +6,8 @@
 #include <SD.h>
 #endif
 #include <SPI.h>
+#define LOGGER_SD SDFS
+#define LOGGER_SD SD
 
 static uint32_t getFreeMem() {
 #if defined(ESP8266) || defined(ESP32)
@@ -18,7 +20,7 @@ static uint32_t getFreeMem() {
 LoggerClass Logger;
 
 bool LoggerClass::begin() {
-    sdAvailable = SD.begin();
+    sdAvailable = LOGGER_SD.begin();
     if (!sdAvailable) {
         Serial.println("[LOGGER] SD init failed");
         return false;
@@ -26,7 +28,7 @@ bool LoggerClass::begin() {
 
     unsigned long t = millis();
     snprintf(fileName, sizeof(fileName), "/log_%lu.txt", t);
-    logFile = SD.open(fileName, FILE_WRITE);
+    logFile = LOGGER_SD.open(fileName, FILE_WRITE);
     if (!logFile) {
         Serial.println("[LOGGER] file open failed");
         sdAvailable = false;

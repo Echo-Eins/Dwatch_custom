@@ -735,7 +735,9 @@ void DisplayUI::update(bool force) {
             display.setTextAlignment(TEXT_ALIGN_LEFT);
             strobeLED    = false;
             highlightLED = false;
+#fdef HIGHLIGHT_LED
             digitalWrite(HIGHLIGHT_LED, highlightLED);
+#endif // HIGHLIGHT_LED
             return;
         }
     }
@@ -1000,7 +1002,9 @@ void DisplayUI::setupButtons() {
                     display.setTextAlignment(TEXT_ALIGN_LEFT);
                     strobeLED    = false;
                     highlightLED = false;
+#ifdef HIGHLIGHT_LED
                     digitalWrite(HIGHLIGHT_LED, highlightLED);
+#endif // HIGHLIGHT_LED
                     break;
             }
         }
@@ -1018,7 +1022,9 @@ void DisplayUI::setupButtons() {
                     display.setTextAlignment(TEXT_ALIGN_LEFT);
                     strobeLED = false;
                     highlightLED = false;
+#ifdef HIGHLIGHT_LED
                     digitalWrite(HIGHLIGHT_LED, highlightLED);
+#endif // HIGHLIGHT_LED
                 }
             }
         }, 800);
@@ -1365,7 +1371,9 @@ void DisplayUI::drawTimer() {
         strobeLED = true;
         highlightLED = true;
         strobeTime = currentTime;
+#ifdef HIGHLIGHT_LED
         digitalWrite(HIGHLIGHT_LED, highlightLED);
+#endif // HIGHLIGHT_LED
     }
 }
 
