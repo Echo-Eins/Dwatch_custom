@@ -2,12 +2,12 @@
 
 #if defined(ESP8266)
 #include <SDFS.h>
+#define LOGGER_SD SDFS
 #else
 #include <SD.h>
+#define LOGGER_SD SD
 #endif
 #include <SPI.h>
-#define LOGGER_SD SDFS
-#define LOGGER_SD SD
 
 static uint32_t getFreeMem() {
 #if defined(ESP8266) || defined(ESP32)
