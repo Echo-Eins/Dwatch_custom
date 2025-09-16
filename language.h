@@ -1,7 +1,7 @@
 /* This software is licensed under the MIT License: https://github.com/spacehuhntech/esp8266_deauther */
 
 #pragma once
-
+#ifdef ARDUINO
 #include "Arduino.h"
 #else
 #include <stdint.h>
